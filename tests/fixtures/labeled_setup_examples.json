@@ -1,0 +1,102 @@
+[
+  {
+    "case_id": "real_setup_001",
+    "fixture_id": "bearish_complete_model_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_002",
+    "fixture_id": "bearish_complete_model_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_003",
+    "fixture_id": "bearish_complete_model_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_004",
+    "fixture_id": "bearish_complete_model_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_005",
+    "fixture_id": "bearish_complete_model_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_006",
+    "fixture_id": "bearish_missing_mss_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_007",
+    "fixture_id": "bearish_missing_mss_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_008",
+    "fixture_id": "bearish_missing_mss_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_009",
+    "fixture_id": "bearish_missing_mss_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_010",
+    "fixture_id": "bullish_complete_model_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_011",
+    "fixture_id": "bullish_complete_model_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_012",
+    "fixture_id": "bullish_complete_model_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_013",
+    "fixture_id": "bullish_complete_model_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_014",
+    "fixture_id": "bullish_missing_displacement_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_015",
+    "fixture_id": "bullish_missing_displacement_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_016",
+    "fixture_id": "bullish_missing_displacement_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_017",
+    "fixture_id": "htf_bullish_m15_bearish_conflict_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_018",
+    "fixture_id": "htf_bullish_m15_bearish_conflict_001",
+    "trader_dol_direction": "buyside"
+  },
+  {
+    "case_id": "real_setup_019",
+    "fixture_id": "missing_xagusd_required_ssmt_001",
+    "trader_dol_direction": "sellside"
+  },
+  {
+    "case_id": "real_setup_020",
+    "fixture_id": "secondary_stale_001",
+    "trader_dol_direction": "sellside"
+  }
+]

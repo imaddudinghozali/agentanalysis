@@ -152,11 +152,7 @@ Use the local dependency path in this workspace when the global/user Python site
 $env:PYTHONPATH=".deps"; python -m pytest -q
 ```
 
-Expected current result:
-
-```text
-20 passed
-```
+Expected current result: all tests pass.
 
 Frontend build:
 
@@ -175,5 +171,6 @@ Implemented MVP coverage includes:
 - DOL candidate scoring with liquidity type, HTF location, range alignment, execution evidence, session, and proximity penalty.
 - SSMT states for aligned, missing, stale, timestamp mismatch, and insufficient data.
 - Golden fixtures for BUY/SELL complete gates, WAIT reasons, stale/missing data, HTF/M15 conflict, ambiguous/no DOL, and duplicate webhook upsert.
+- PRD acceptance guards for reason-code taxonomy, strategy defaults, persistence tables, dashboard analysis request, and 20 labeled DOL-direction setup examples.
 
 Out of MVP scope per the PRD: trade execution, broker integration, full backtesting, machine learning, DXY confirmation, M5 refinement, and TradingView browser automation.

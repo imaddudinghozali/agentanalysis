@@ -143,6 +143,7 @@ def test_csv_import_and_analyze_returns_wait_schema(tmp_path, monkeypatch):
         "mode": "normal",
     }
     mcp_body = server.analyze_market(**tool_args)
+    assert mcp_body == body
     assert mcp_body["action"] == body["action"]
     assert mcp_body["trade_idea"] == body["trade_idea"]
     assert mcp_body["htf_context"] == body["htf_context"]

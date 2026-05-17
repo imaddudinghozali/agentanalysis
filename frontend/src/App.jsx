@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -41,6 +41,21 @@ function formatLabel(value) {
   return String(value ?? "unavailable").replaceAll("_", " ");
 }
 
+function formatCoverageItem(item) {
+  if (typeof item === "string") {
+    return formatLabel(item);
+  }
+  if (item && typeof item === "object") {
+    const parts = [item.symbol, item.timeframe, item.reason ?? item.warning].filter(Boolean);
+    return parts.length ? parts.map(formatLabel).join(" ") : JSON.stringify(item);
+  }
+  return formatLabel(item);
+}
+
+function formatList(items) {
+  return Array.isArray(items) && items.length ? items.map(formatCoverageItem).join(", ") : "None";
+}
+
 function StatusPill({ children, tone = "neutral" }) {
   return <span className={`pill pill-${tone}`}>{children}</span>;
 }
@@ -48,7 +63,11 @@ function StatusPill({ children, tone = "neutral" }) {
 function IconButton({ label, onClick, busy }) {
   return (
     <button className="icon-button" type="button" onClick={onClick} disabled={busy} title={label}>
-      {busy ? <LoaderCircle size={18} className="spin" /> : <RefreshCcw size={18} />}
+      {busy ? (
+        <LoaderCircle size={18} className="spin" aria-hidden="true" />
+      ) : (
+        <RefreshCcw size={18} aria-hidden="true" />
+      )}
       <span>{label}</span>
     </button>
   );
@@ -58,7 +77,7 @@ function Panel({ icon: Icon, title, children, className = "" }) {
   return (
     <section className={`panel ${className}`}>
       <header className="panel-header">
-        <Icon size={18} />
+        <Icon size={18} aria-hidden="true" />
         <h2>{title}</h2>
       </header>
       {children}
@@ -79,6 +98,7 @@ function Metric({ label, value, sub }) {
 function DataStatus({ analysis }) {
   const coverage = analysis.data_coverage ?? {};
   const lastCandles = coverage.last_candles ?? {};
+  const counts = coverage.counts ?? {};
   const missing = coverage.missing ?? [];
   const stale = coverage.stale ?? [];
 
@@ -98,9 +118,19 @@ function DataStatus({ analysis }) {
           </div>
         ))}
       </div>
+      {Object.keys(lastCandles).length === 0 && Object.keys(counts).length > 0 ? (
+        <div className="feed-list">
+          {Object.entries(counts).map(([key, count]) => (
+            <div className="feed-row" key={key}>
+              <span>{key.replace("_", " ")}</span>
+              <time>{count} candles</time>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="compact-list">
-        <span>Missing: {missing.length ? missing.join(", ") : "None"}</span>
-        <span>Stale: {stale.length ? stale.join(", ") : "None"}</span>
+        <span>Missing: {formatList(missing)}</span>
+        <span>Stale: {formatList(stale)}</span>
       </div>
     </Panel>
   );
@@ -182,7 +212,7 @@ function Checklist({ analysis }) {
           const present = Boolean(confirmation[key]);
           return (
             <div className={`check-row ${present ? "present" : "missing"}`} key={key}>
-              {present ? <Check size={18} /> : <X size={18} />}
+              {present ? <Check size={18} aria-hidden="true" /> : <X size={18} aria-hidden="true" />}
               <span>{label}</span>
               {blocking.has(key) ? <StatusPill tone="bad">Blocking</StatusPill> : null}
             </div>
@@ -255,14 +285,14 @@ function Narrative({ analysis }) {
         <div className="warning-list">
           {warnings.map((warning) => (
             <span key={warning}>
-              <AlertTriangle size={16} />
+              <AlertTriangle size={16} aria-hidden="true" />
               {warning}
             </span>
           ))}
         </div>
       ) : (
         <span className="quiet-line">
-          <CircleHelp size={16} />
+          <CircleHelp size={16} aria-hidden="true" />
           No data warnings
         </span>
       )}
@@ -323,7 +353,7 @@ export default function App() {
 
       {error ? (
         <div className="api-error">
-          <AlertTriangle size={18} />
+          <AlertTriangle size={18} aria-hidden="true" />
           <span>{error}; showing fixture analysis.</span>
         </div>
       ) : null}

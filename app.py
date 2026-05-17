@@ -36,6 +36,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+        allow_origin_regex=r"^http://(127\.0\.0\.1|localhost):51\d{2}$",
         allow_methods=["*"],
         allow_headers=["*"],
     )

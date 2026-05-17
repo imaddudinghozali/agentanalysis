@@ -162,6 +162,10 @@ def test_analysis_manifests_execute_expected_oracles(tmp_path):
         rerun_body = _analyze_fixture(client, manifest)
         assert rerun_body == body, manifest["fixture_id"]
         next_dol = body.get("liquidity", {}).get("next_dol") or {}
+        assert body["data_coverage"]["counts"], manifest["fixture_id"]
+        assert body["data_coverage"]["last_candles"], manifest["fixture_id"]
+        assert "current_price" in body["htf_context"], manifest["fixture_id"]
+        assert "bias_source" in body["htf_context"], manifest["fixture_id"]
         assert body["action"] == manifest["expected_action"], manifest["fixture_id"]
         assert body["bias"] == manifest["expected_bias"], manifest["fixture_id"]
         assert body["active_model"] == manifest["expected_active_model"], manifest["fixture_id"]

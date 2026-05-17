@@ -63,6 +63,8 @@ class DataCoverage:
     stale: list[str] = field(default_factory=list)
     degraded_mode: bool = False
     warnings: list[str] = field(default_factory=list)
+    counts: dict[str, int] = field(default_factory=dict)
+    last_candles: dict[str, str] = field(default_factory=dict)
 
 
 def parse_time(value: Any) -> datetime:

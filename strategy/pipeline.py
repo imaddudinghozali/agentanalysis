@@ -36,7 +36,17 @@ def analyze_market(
     h4 = normalize_candles(primary.get("H4", []), as_of)
     d1 = normalize_candles(primary.get("D1", []), as_of)
     secondary_m15 = normalize_candles(secondary.get(execution_timeframe, []), as_of)
-    coverage = _data_coverage(m15, h1, h4, d1, cfg)
+    coverage = _data_coverage(
+        m15=m15,
+        h1=h1,
+        h4=h4,
+        d1=d1,
+        secondary_m15=secondary_m15,
+        primary_symbol=primary_symbol,
+        secondary_symbol=secondary_symbol,
+        execution_timeframe=execution_timeframe,
+        cfg=cfg,
+    )
     context_map = {"H1": h1, "H4": h4}
     execution_price = m15[-1].close if m15 else None
     active_range, htf_swings = build_active_dealing_range(
@@ -101,7 +111,7 @@ def analyze_market(
             "action": trade.trade_idea.action,
             "data_coverage": coverage,
             "time_context": time_context,
-            "htf_context": _htf_context(active_range, htf_narrative, dol_selection.selected),
+            "htf_context": _htf_context(active_range, htf_narrative, dol_selection.selected, execution_price),
             "liquidity": {
                 "recently_taken": sweeps,
                 "next_dol": dol_selection.selected or _unavailable_dol(dol_selection.reason_code),
@@ -125,7 +135,18 @@ def analyze_market(
     )
 
 
-def _data_coverage(m15: list[Any], h1: list[Any], h4: list[Any], d1: list[Any], cfg: StrategyConfig) -> DataCoverage:
+def _data_coverage(
+    *,
+    m15: list[Any],
+    h1: list[Any],
+    h4: list[Any],
+    d1: list[Any],
+    secondary_m15: list[Any],
+    primary_symbol: str,
+    secondary_symbol: str,
+    execution_timeframe: str,
+    cfg: StrategyConfig,
+) -> DataCoverage:
     missing: list[str] = []
     warnings: list[str] = []
     degraded = False
@@ -147,17 +168,45 @@ def _data_coverage(m15: list[Any], h1: list[Any], h4: list[Any], d1: list[Any], 
     if not d1:
         warnings.append("D1_MISSING")
     status = "complete" if not missing else "degraded" if degraded else "insufficient"
-    return DataCoverage(status=status, missing=missing, degraded_mode=degraded, warnings=_dedupe(warnings))
+    counts = {
+        f"{primary_symbol}_{execution_timeframe}": len(m15),
+        f"{primary_symbol}_H1": len(h1),
+        f"{primary_symbol}_H4": len(h4),
+        f"{primary_symbol}_D1": len(d1),
+        f"{secondary_symbol}_{execution_timeframe}": len(secondary_m15),
+    }
+    last_candles = {
+        key: candles[-1].time
+        for key, candles in {
+            f"{primary_symbol}_{execution_timeframe}": m15,
+            f"{primary_symbol}_H1": h1,
+            f"{primary_symbol}_H4": h4,
+            f"{primary_symbol}_D1": d1,
+            f"{secondary_symbol}_{execution_timeframe}": secondary_m15,
+        }.items()
+        if candles
+    }
+    return DataCoverage(
+        status=status,
+        missing=missing,
+        degraded_mode=degraded,
+        warnings=_dedupe(warnings),
+        counts=counts,
+        last_candles=last_candles,
+    )
 
 
-def _htf_context(active_range: Any, htf_narrative: Any, selected_dol: Any) -> dict[str, Any]:
+def _htf_context(active_range: Any, htf_narrative: Any, selected_dol: Any, current_price: float | None) -> dict[str, Any]:
+    bias_source = _bias_source(htf_narrative)
     if active_range is None:
         return {
             "dealing_range_high": None,
             "dealing_range_low": None,
             "equilibrium": None,
+            "current_price": current_price,
             "current_position": "unknown",
             "dol_direction": selected_dol.direction if selected_dol else None,
+            "bias_source": bias_source,
             "narrative_direction": htf_narrative.direction,
             "narrative_status": htf_narrative.status,
             "conflict": htf_narrative.conflict,
@@ -167,14 +216,29 @@ def _htf_context(active_range: Any, htf_narrative: Any, selected_dol: Any) -> di
         "dealing_range_high": active_range.high,
         "dealing_range_low": active_range.low,
         "equilibrium": active_range.equilibrium,
+        "current_price": active_range.current_price,
         "current_position": active_range.current_position,
         "dol_direction": selected_dol.direction if selected_dol else active_range.direction_hint,
+        "bias_source": bias_source,
         "narrative_direction": htf_narrative.direction,
         "narrative_status": htf_narrative.status,
         "conflict": htf_narrative.conflict,
         "frames": htf_narrative.frames,
         "timeframe": active_range.timeframe,
     }
+
+
+def _bias_source(htf_narrative: Any) -> str:
+    complete_frames = [
+        frame.timeframe
+        for frame in getattr(htf_narrative, "frames", [])
+        if getattr(frame, "status", None) == "complete" and getattr(frame, "direction", None) not in {None, "neutral"}
+    ]
+    if complete_frames:
+        return " + ".join(complete_frames)
+    if getattr(htf_narrative, "status", None):
+        return str(htf_narrative.status)
+    return "unavailable"
 
 
 def _market_state(sweep: Any, displacement: Any, structure: Any) -> str:
