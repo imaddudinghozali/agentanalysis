@@ -35,6 +35,28 @@ REQUIRED_MANIFEST_KEYS = {
     "expected_warnings",
     "json_assertions",
 }
+PRD_REQUIRED_JSON_PATHS = {
+    "$.action",
+    "$.bias",
+    "$.active_model",
+    "$.analysis_as_of",
+    "$.rule_version",
+    "$.data_coverage.status",
+    "$.liquidity.next_dol.label",
+    "$.liquidity.next_dol.score",
+    "$.ssmt.available",
+    "$.ssmt.detected",
+    "$.ssmt.sync_status",
+    "$.confirmation.sweep",
+    "$.confirmation.displacement",
+    "$.confirmation.mss",
+    "$.confirmation.fvg",
+    "$.trade_idea.reason_code",
+    "$.trade_idea.blocking_conditions",
+    "$.gate_result.passed",
+    "$.gate_result.failed_reasons",
+    "$.warnings",
+}
 
 
 def _manifest_paths() -> list[Path]:
@@ -57,6 +79,32 @@ def _import_manifest_csvs(client: TestClient, manifest_path: Path, manifest: dic
         assert response.json()["rows_imported"] > 0
 
 
+def _analyze_fixture(client: TestClient, manifest: dict) -> dict:
+    response = client.post(
+        "/api/analyze",
+        json={
+            "primary_symbol": "XAUUSD",
+            "secondary_symbol": "XAGUSD",
+            "execution_timeframe": "M15",
+            "context_timeframes": ["H4", "H1", "D1"],
+            "analysis_as_of": manifest["analysis_as_of"],
+            "mode": "normal",
+        },
+    )
+    assert response.status_code == 200
+    return response.json()
+
+
+def _json_path_value(body: dict, path: str):
+    assert path.startswith("$.")
+    value = body
+    for part in path[2:].split("."):
+        assert isinstance(value, dict), path
+        assert part in value, path
+        value = value[part]
+    return value
+
+
 def test_prd_golden_fixture_inventory_is_complete():
     actual = {path.parent.name for path in _manifest_paths()}
     assert actual == EXPECTED_FIXTURES
@@ -73,6 +121,8 @@ def test_golden_fixture_manifests_are_oracle_driven():
         assert isinstance(manifest["expected_warnings"], list)
         assert isinstance(manifest["json_assertions"], list)
         assert manifest["json_assertions"]
+        if "webhook_payloads" not in manifest:
+            assert PRD_REQUIRED_JSON_PATHS <= set(manifest["json_assertions"])
 
         for relative_csv_path in manifest.get("csv_files", {}).values():
             csv_path = (path.parent / relative_csv_path).resolve()
@@ -108,25 +158,27 @@ def test_analysis_manifests_execute_expected_oracles(tmp_path):
         client = TestClient(create_app(tmp_path / f"{manifest['fixture_id']}.sqlite3"))
         _import_manifest_csvs(client, manifest_path, manifest)
 
-        response = client.post(
-            "/api/analyze",
-            json={
-                "primary_symbol": "XAUUSD",
-                "secondary_symbol": "XAGUSD",
-                "execution_timeframe": "M15",
-                "context_timeframes": ["H4", "H1", "D1"],
-                "analysis_as_of": manifest["analysis_as_of"],
-                "mode": "normal",
-            },
-        )
-
-        assert response.status_code == 200
-        body = response.json()
+        body = _analyze_fixture(client, manifest)
+        rerun_body = _analyze_fixture(client, manifest)
+        assert rerun_body == body, manifest["fixture_id"]
         next_dol = body.get("liquidity", {}).get("next_dol") or {}
         assert body["action"] == manifest["expected_action"], manifest["fixture_id"]
         assert body["bias"] == manifest["expected_bias"], manifest["fixture_id"]
         assert body["active_model"] == manifest["expected_active_model"], manifest["fixture_id"]
         assert next_dol.get("label") == manifest["expected_dol_label"], manifest["fixture_id"]
         assert body["trade_idea"]["reason_code"] == manifest["expected_reason_code"], manifest["fixture_id"]
+        for path in PRD_REQUIRED_JSON_PATHS:
+            _json_path_value(body, path)
+        if body["action"] in {"BUY", "SELL"}:
+            assert body["gate_result"]["passed"] is True, manifest["fixture_id"]
+            assert body["trade_idea"]["reason_code"] == "GATE_COMPLETE", manifest["fixture_id"]
+            assert set(body["gate_result"]["required_confirmations"]) <= set(
+                body["gate_result"]["present_confirmations"]
+            ), manifest["fixture_id"]
+        else:
+            assert body["gate_result"]["passed"] is False, manifest["fixture_id"]
+        narrative = body.get("narrative_report") or body.get("narrative", "")
+        assert next_dol.get("label") in narrative, manifest["fixture_id"]
+        assert body["trade_idea"]["reason_code"] in narrative, manifest["fixture_id"]
         for warning in manifest["expected_warnings"]:
             assert warning in body["warnings"], manifest["fixture_id"]

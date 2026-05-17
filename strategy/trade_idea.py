@@ -78,6 +78,8 @@ def generate_trade_idea(
     bias = "BUY" if selected_dol.direction == "buyside" else "SELL"
     if selected_dol.score < 60:
         return _wait(None, bias, "UNCLEAR_DOL", ["dol"], ["sweep", "displacement", "mss", "fvg"], [])
+    if "H4_MISSING" in warnings and selected_dol.confidence != "high":
+        return _wait(None, bias, "UNCLEAR_DOL", ["htf_context"], ["sweep", "displacement", "mss", "fvg"], [])
     if active_range.current_position == "equilibrium" and selected_dol.score < 80:
         return _wait(None, bias, "UNCLEAR_DOL", ["dol"], ["sweep", "displacement", "mss", "fvg"], [])
     if not sweep:

@@ -65,6 +65,7 @@ def analyze_market(
         time_context,
         cfg,
         htf_direction=htf_narrative.direction,
+        include_execution_factors=True,
     )
     warnings = list(coverage.warnings)
     if htf_narrative.reason_code in {"HTF_CONFLICT", "MISSING_HTF_CONTEXT"} and htf_narrative.reason_code not in warnings:
@@ -103,7 +104,7 @@ def analyze_market(
             "htf_context": _htf_context(active_range, htf_narrative, dol_selection.selected),
             "liquidity": {
                 "recently_taken": sweeps,
-                "next_dol": dol_selection.selected,
+                "next_dol": dol_selection.selected or _unavailable_dol(dol_selection.reason_code),
             },
             "dol_candidates": dol_selection.candidates,
             "ssmt": ssmt,
@@ -184,6 +185,19 @@ def _market_state(sweep: Any, displacement: Any, structure: Any) -> str:
     if sweep:
         return "post_sweep"
     return "building_context"
+
+
+def _unavailable_dol(reason_code: str | None) -> dict[str, Any]:
+    return {
+        "label": "unavailable",
+        "timeframe": None,
+        "liquidity_type": None,
+        "direction": None,
+        "price": None,
+        "score": 0,
+        "confidence": "unavailable",
+        "reasoning": [reason_code or "UNCLEAR_DOL"],
+    }
 
 
 def _reasoning(active_range: Any, htf_narrative: Any, selected_dol: Any, sweep: Any, ssmt: Any, displacement: Any, structure: Any, fvg: Any, reason_code: str) -> list[str]:

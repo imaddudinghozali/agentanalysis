@@ -17,11 +17,11 @@ def build_narrative(
             f"with {selected_dol.confidence} confidence ({selected_dol.score})."
         )
     else:
-        parts.append("No actionable DOL was selected.")
+        parts.append("Selected DOL is unavailable.")
     if trade.trade_idea.action == "WAIT":
         parts.append(f"Action is WAIT because {trade.trade_idea.reason_code}.")
     else:
-        parts.append(f"Action is {trade.trade_idea.action}; gate is complete.")
+        parts.append(f"Action is {trade.trade_idea.action}; reason code is {trade.trade_idea.reason_code}.")
     if reasoning:
         parts.append("Key evidence: " + "; ".join(reasoning[:5]) + ".")
     if warnings:

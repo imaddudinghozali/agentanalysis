@@ -144,7 +144,26 @@ def test_pipeline_all_bearish_confirmations_allows_sell():
     assert result["htf_context"]["narrative_status"] == "complete"
     assert result["htf_context"]["narrative_direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["direction"] == "sellside"
-    assert not any("MSS" in reason for reason in result["liquidity"]["next_dol"]["reasoning"])
+    assert result["liquidity"]["next_dol"]["confidence"] == "high"
+    assert any("opposite-side buyside sweep" in reason for reason in result["liquidity"]["next_dol"]["reasoning"])
+    assert any("MSS confirms direction" in reason for reason in result["liquidity"]["next_dol"]["reasoning"])
+
+
+def test_pipeline_allows_h1_only_degraded_mode_when_h4_is_missing_and_gate_is_complete():
+    data = market(with_mss=True)
+    data["XAUUSD"]["H4"] = []
+    result = analyze_market(
+        data,
+        analysis_as_of=data["XAUUSD"]["M15"][-1]["time"],
+    )
+    assert result["data_coverage"]["status"] == "degraded"
+    assert result["data_coverage"]["degraded_mode"] is True
+    assert "H4_MISSING" in result["warnings"]
+    assert result["htf_context"]["timeframe"] == "H1"
+    assert result["htf_context"]["narrative_status"] == "degraded"
+    assert result["liquidity"]["next_dol"]["confidence"] == "high"
+    assert result["action"] == "SELL"
+    assert result["trade_idea"]["reason_code"] == "GATE_COMPLETE"
 
 
 def test_pipeline_waits_when_mss_is_missing():

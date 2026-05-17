@@ -1,41 +1,59 @@
 {
-  "fixture_id": "bearish_missing_mss_001",
-  "symbols": [
-    "XAUUSD",
-    "XAGUSD"
-  ],
-  "timeframes": [
-    "D1",
-    "H4",
-    "H1",
-    "M15"
-  ],
-  "analysis_as_of": "2026-05-03T12:30:00Z",
-  "csv_files": {
-    "XAUUSD_M15": "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_m15.csv",
-    "XAUUSD_H1": "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_h1.csv",
-    "XAUUSD_H4": "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_h4.csv",
-    "XAUUSD_D1": "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_d1.csv",
-    "XAGUSD_M15": "../../../data/fixtures/generated/bearish_missing_mss_001/xagusd_m15.csv"
-  },
-  "expected_action": "WAIT",
-  "expected_bias": "SELL",
-  "expected_active_model": "IRL_TO_ERL_BEARISH",
-  "expected_dol_label": "h4_swing_low",
-  "expected_reason_code": "MISSING_MSS",
-  "required_confirmations": {
-    "m15_buyside_sweep": true,
-    "bearish_ssmt": true,
-    "bearish_displacement": true,
-    "bearish_mss": false,
-    "bearish_fvg": true
-  },
-  "expected_warnings": [],
-  "json_assertions": [
-    "$.trade_idea.reason_code",
-    "$.trade_idea.blocking_conditions",
-    "$.gate_result.passed",
-    "$.gate_result.failed_reasons",
-    "$.narrative"
-  ]
+    "fixture_id":  "bearish_missing_mss_001",
+    "symbols":  [
+                    "XAUUSD",
+                    "XAGUSD"
+                ],
+    "timeframes":  [
+                       "D1",
+                       "H4",
+                       "H1",
+                       "M15"
+                   ],
+    "analysis_as_of":  "2026-05-03T12:30:00Z",
+    "csv_files":  {
+                      "XAUUSD_M15":  "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_m15.csv",
+                      "XAUUSD_H1":  "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_h1.csv",
+                      "XAUUSD_H4":  "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_h4.csv",
+                      "XAUUSD_D1":  "../../../data/fixtures/generated/bearish_missing_mss_001/xauusd_d1.csv",
+                      "XAGUSD_M15":  "../../../data/fixtures/generated/bearish_missing_mss_001/xagusd_m15.csv"
+                  },
+    "expected_action":  "WAIT",
+    "expected_bias":  "SELL",
+    "expected_active_model":  "IRL_TO_ERL_BEARISH",
+    "expected_dol_label":  "h4_swing_low",
+    "expected_reason_code":  "MISSING_MSS",
+    "required_confirmations":  {
+                                   "m15_buyside_sweep":  true,
+                                   "bearish_ssmt":  true,
+                                   "bearish_displacement":  true,
+                                   "bearish_mss":  false,
+                                   "bearish_fvg":  true
+                               },
+    "expected_warnings":  [
+
+                          ],
+    "json_assertions":  [
+                            "$.action",
+                            "$.bias",
+                            "$.active_model",
+                            "$.analysis_as_of",
+                            "$.rule_version",
+                            "$.data_coverage.status",
+                            "$.liquidity.next_dol.label",
+                            "$.liquidity.next_dol.score",
+                            "$.ssmt.available",
+                            "$.ssmt.detected",
+                            "$.ssmt.sync_status",
+                            "$.confirmation.sweep",
+                            "$.confirmation.displacement",
+                            "$.confirmation.mss",
+                            "$.confirmation.fvg",
+                            "$.trade_idea.reason_code",
+                            "$.trade_idea.blocking_conditions",
+                            "$.gate_result.passed",
+                            "$.gate_result.failed_reasons",
+                            "$.warnings"
+                        ]
 }
+

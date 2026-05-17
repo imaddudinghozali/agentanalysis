@@ -1,35 +1,52 @@
 {
-  "fixture_id": "insufficient_htf_001",
-  "symbols": [
-    "XAUUSD",
-    "XAGUSD"
-  ],
-  "timeframes": [
-    "M15"
-  ],
-  "analysis_as_of": "2026-05-03T12:30:00Z",
-  "csv_files": {
-    "XAUUSD_M15": "../../../data/fixtures/generated/insufficient_htf_001/xauusd_m15.csv",
-    "XAGUSD_M15": "../../../data/fixtures/generated/insufficient_htf_001/xagusd_m15.csv"
-  },
-  "expected_action": "WAIT",
-  "expected_bias": "WAIT",
-  "expected_active_model": null,
-  "expected_dol_label": null,
-  "expected_reason_code": "NO_ACTIVE_DEALING_RANGE",
-  "required_confirmations": {
-    "xauusd_h1_minimum_candles": 120,
-    "xauusd_h4_minimum_candles": 80
-  },
-  "expected_warnings": [
-    "MISSING_HTF_CONTEXT",
-    "INSUFFICIENT_HTF_DATA",
-    "D1_MISSING"
-  ],
-  "json_assertions": [
-    "$.data_coverage.status",
-    "$.data_coverage.missing",
-    "$.trade_idea.reason_code",
-    "$.warnings"
-  ]
+    "fixture_id":  "insufficient_htf_001",
+    "symbols":  [
+                    "XAUUSD",
+                    "XAGUSD"
+                ],
+    "timeframes":  [
+                       "M15"
+                   ],
+    "analysis_as_of":  "2026-05-03T12:30:00Z",
+    "csv_files":  {
+                      "XAUUSD_M15":  "../../../data/fixtures/generated/insufficient_htf_001/xauusd_m15.csv",
+                      "XAGUSD_M15":  "../../../data/fixtures/generated/insufficient_htf_001/xagusd_m15.csv"
+                  },
+    "expected_action":  "WAIT",
+    "expected_bias":  "WAIT",
+    "expected_active_model":  null,
+    "expected_dol_label":  "unavailable",
+    "expected_reason_code":  "NO_ACTIVE_DEALING_RANGE",
+    "required_confirmations":  {
+                                   "xauusd_h1_minimum_candles":  120,
+                                   "xauusd_h4_minimum_candles":  80
+                               },
+    "expected_warnings":  [
+                              "MISSING_HTF_CONTEXT",
+                              "INSUFFICIENT_HTF_DATA",
+                              "D1_MISSING"
+                          ],
+    "json_assertions":  [
+                            "$.action",
+                            "$.bias",
+                            "$.active_model",
+                            "$.analysis_as_of",
+                            "$.rule_version",
+                            "$.data_coverage.status",
+                            "$.liquidity.next_dol.label",
+                            "$.liquidity.next_dol.score",
+                            "$.ssmt.available",
+                            "$.ssmt.detected",
+                            "$.ssmt.sync_status",
+                            "$.confirmation.sweep",
+                            "$.confirmation.displacement",
+                            "$.confirmation.mss",
+                            "$.confirmation.fvg",
+                            "$.trade_idea.reason_code",
+                            "$.trade_idea.blocking_conditions",
+                            "$.gate_result.passed",
+                            "$.gate_result.failed_reasons",
+                            "$.warnings"
+                        ]
 }
+

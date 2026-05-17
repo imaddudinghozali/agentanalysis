@@ -48,11 +48,16 @@ def build_htf_narrative(
         _daily_frame(d1, current_price, config),
     ]
     usable = [frame for frame in frames if frame.status == "complete" and frame.direction != "neutral"]
-    required_incomplete = [
-        frame.timeframe
-        for frame in frames
-        if frame.timeframe in {"H4", "H1"} and frame.status != "complete"
-    ]
+    h4_state = next(frame for frame in frames if frame.timeframe == "H4")
+    h1_state = next(frame for frame in frames if frame.timeframe == "H1")
+    d1_state = next(frame for frame in frames if frame.timeframe == "D1")
+    h1_complete = h1_state.status == "complete"
+    h4_complete = h4_state.status == "complete"
+    required_incomplete = []
+    if not h1_complete:
+        required_incomplete.append("H1")
+    if not h4_complete and not h1_complete:
+        required_incomplete.append("H4")
     if required_incomplete:
         return HTFNarrative(
             "insufficient",
@@ -70,13 +75,11 @@ def build_htf_narrative(
             reasoning=["D1/H4/H1 are neutral or unavailable"],
         )
 
-    h4_state = next(frame for frame in frames if frame.timeframe == "H4")
-    h1_state = next(frame for frame in frames if frame.timeframe == "H1")
-    d1_state = next(frame for frame in frames if frame.timeframe == "D1")
     required_dirs = {frame.direction for frame in (h4_state, h1_state) if frame.direction != "neutral"}
     conflict = len(required_dirs) > 1
-    if d1_state.status == "complete" and d1_state.direction != "neutral" and h4_state.direction != "neutral":
-        conflict = conflict or d1_state.direction != h4_state.direction
+    anchor_state = h4_state if h4_state.direction != "neutral" else h1_state
+    if d1_state.status == "complete" and d1_state.direction != "neutral" and anchor_state.direction != "neutral":
+        conflict = conflict or d1_state.direction != anchor_state.direction
     if conflict:
         return HTFNarrative(
             "conflict",
@@ -91,7 +94,7 @@ def build_htf_narrative(
     if direction == "neutral" and d1_state.status == "complete":
         direction = d1_state.direction
     return HTFNarrative(
-        "complete",
+        "complete" if h4_complete else "degraded",
         direction,
         frames=frames,
         reasoning=[f"{frame.timeframe} {frame.position} favors {frame.direction}" for frame in usable],
