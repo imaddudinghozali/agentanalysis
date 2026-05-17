@@ -1,0 +1,39 @@
+{
+  "fixture_id": "htf_bullish_m15_bearish_conflict_001",
+  "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+  ],
+  "timeframes": [
+    "D1",
+    "H4",
+    "H1",
+    "M15"
+  ],
+  "analysis_as_of": "2026-05-03T12:30:00Z",
+  "csv_files": {
+    "XAUUSD_M15": "../../../data/fixtures/generated/htf_bullish_m15_bearish_conflict_001/xauusd_m15.csv",
+    "XAUUSD_H1": "../../../data/fixtures/generated/htf_bullish_m15_bearish_conflict_001/xauusd_h1.csv",
+    "XAUUSD_H4": "../../../data/fixtures/generated/htf_bullish_m15_bearish_conflict_001/xauusd_h4.csv",
+    "XAUUSD_D1": "../../../data/fixtures/generated/htf_bullish_m15_bearish_conflict_001/xauusd_d1.csv",
+    "XAGUSD_M15": "../../../data/fixtures/generated/htf_bullish_m15_bearish_conflict_001/xagusd_m15.csv"
+  },
+  "expected_action": "WAIT",
+  "expected_bias": "BUY",
+  "expected_active_model": "CONTEXT_CONFLICT",
+  "expected_dol_label": "active_range_high",
+  "expected_reason_code": "HTF_M15_CONFLICT",
+  "required_confirmations": {
+    "m15_buyside_sweep": true,
+    "bearish_displacement": true,
+    "bearish_mss": true,
+    "bearish_fvg": true
+  },
+  "expected_warnings": [],
+  "json_assertions": [
+    "$.bias",
+    "$.active_model",
+    "$.trade_idea.reason_code",
+    "$.warnings"
+  ]
+}

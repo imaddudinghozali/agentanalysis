@@ -1,0 +1,45 @@
+{
+  "fixture_id": "duplicate_webhook_001",
+  "symbols": ["XAUUSD"],
+  "timeframes": ["M15"],
+  "analysis_as_of": "2026-05-16T13:30:00Z",
+  "webhook_payloads": [
+    {
+      "symbol": "XAUUSD",
+      "timeframe": "M15",
+      "time": "2026-05-16T13:30:00Z",
+      "open": 2401.1,
+      "high": 2404.2,
+      "low": 2398.9,
+      "close": 2400.8,
+      "volume": 1668
+    },
+    {
+      "symbol": "XAUUSD",
+      "timeframe": "M15",
+      "time": "2026-05-16T13:30:00Z",
+      "open": 2401.1,
+      "high": 2404.2,
+      "low": 2398.9,
+      "close": 2400.8,
+      "volume": 1668
+    }
+  ],
+  "expected_action": null,
+  "expected_bias": null,
+  "expected_active_model": null,
+  "expected_dol_label": null,
+  "expected_reason_code": null,
+  "expected_storage": {
+    "table": "candles",
+    "unique_key": ["symbol", "timeframe", "time_utc"],
+    "expected_rows_after_duplicate_upsert": 1
+  },
+  "required_confirmations": {},
+  "expected_warnings": [],
+  "json_assertions": [
+    "$.rows_imported",
+    "$.duplicates_upserted",
+    "$.stored_candles"
+  ]
+}

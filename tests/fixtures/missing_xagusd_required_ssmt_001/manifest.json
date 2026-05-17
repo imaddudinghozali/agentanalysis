@@ -1,0 +1,39 @@
+{
+  "fixture_id": "missing_xagusd_required_ssmt_001",
+  "symbols": [
+    "XAUUSD"
+  ],
+  "timeframes": [
+    "D1",
+    "H4",
+    "H1",
+    "M15"
+  ],
+  "analysis_as_of": "2026-05-03T12:30:00Z",
+  "csv_files": {
+    "XAUUSD_M15": "../../../data/fixtures/generated/missing_xagusd_required_ssmt_001/xauusd_m15.csv",
+    "XAUUSD_H1": "../../../data/fixtures/generated/missing_xagusd_required_ssmt_001/xauusd_h1.csv",
+    "XAUUSD_H4": "../../../data/fixtures/generated/missing_xagusd_required_ssmt_001/xauusd_h4.csv",
+    "XAUUSD_D1": "../../../data/fixtures/generated/missing_xagusd_required_ssmt_001/xauusd_d1.csv"
+  },
+  "expected_action": "WAIT",
+  "expected_bias": "SELL",
+  "expected_active_model": null,
+  "expected_dol_label": "active_range_low",
+  "expected_reason_code": "SSMT_UNAVAILABLE",
+  "required_confirmations": {
+    "m15_buyside_sweep": true,
+    "bearish_ssmt": false,
+    "bearish_displacement": true,
+    "bearish_mss": true
+  },
+  "expected_warnings": [
+    "SSMT_UNAVAILABLE"
+  ],
+  "json_assertions": [
+    "$.ssmt.available",
+    "$.ssmt.sync_status",
+    "$.trade_idea.reason_code",
+    "$.warnings"
+  ]
+}

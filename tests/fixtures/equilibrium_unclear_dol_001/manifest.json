@@ -1,0 +1,35 @@
+{
+  "fixture_id": "equilibrium_unclear_dol_001",
+  "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+  ],
+  "timeframes": [
+    "D1",
+    "H4",
+    "H1",
+    "M15"
+  ],
+  "analysis_as_of": "2026-05-03T12:30:00Z",
+  "csv_files": {
+    "XAUUSD_M15": "../../../data/fixtures/generated/equilibrium_unclear_dol_001/xauusd_m15.csv",
+    "XAUUSD_H1": "../../../data/fixtures/generated/equilibrium_unclear_dol_001/xauusd_h1.csv",
+    "XAUUSD_H4": "../../../data/fixtures/generated/equilibrium_unclear_dol_001/xauusd_h4.csv",
+    "XAUUSD_D1": "../../../data/fixtures/generated/equilibrium_unclear_dol_001/xauusd_d1.csv",
+    "XAGUSD_M15": "../../../data/fixtures/generated/equilibrium_unclear_dol_001/xagusd_m15.csv"
+  },
+  "expected_action": "WAIT",
+  "expected_bias": "WAIT",
+  "expected_active_model": "NO_DOL",
+  "expected_dol_label": null,
+  "expected_reason_code": "UNCLEAR_DOL",
+  "required_confirmations": {
+    "price_inside_equilibrium_band": true
+  },
+  "expected_warnings": [],
+  "json_assertions": [
+    "$.htf_context.current_position",
+    "$.trade_idea.reason_code",
+    "$.gate_result.passed"
+  ]
+}
