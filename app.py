@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import ValidationError
+from starlette.middleware.cors import CORSMiddleware
 from starlette.datastructures import UploadFile
 
 from schemas.candle import CandlePayload
@@ -31,6 +32,12 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         version="0.1.0",
         description="WAIT-first API for candle ingestion, market analysis, and data status.",
         lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     @app.get("/health")
