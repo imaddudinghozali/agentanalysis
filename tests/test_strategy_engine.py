@@ -3,7 +3,13 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from strategy import StrategyConfig, analyze_market, normalize_candles
+from strategy.common import Candle
+from strategy.displacement import DisplacementSignal
+from strategy.dol import score_dol_candidates
+from strategy.liquidity import LiquidityPool
+from strategy.range import DealingRange
 from strategy.ssmt import detect_ssmt
+from strategy.structure import StructureSignal
 from strategy.swing import detect_swings
 
 
@@ -206,3 +212,82 @@ def test_pipeline_waits_when_required_htf_context_is_insufficient():
     assert result["trade_idea"]["reason_code"] == "MISSING_HTF_CONTEXT"
     assert result["gate_result"]["passed"] is False
     assert "MISSING_HTF_CONTEXT" in result["warnings"]
+
+
+def test_dol_scoring_returns_ambiguous_when_opposite_targets_are_close():
+    start = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    candles = normalize_candles(
+        [candle(start + timedelta(minutes=15 * i), 110, 111, 109, 110) for i in range(20)]
+    )
+    active_range = DealingRange(
+        timeframe="H4",
+        high=120,
+        low=80,
+        high_time=start,
+        low_time=start,
+        equilibrium=100,
+        current_position="equilibrium",
+        current_price=110,
+        direction_hint="neutral",
+    )
+    selection = score_dol_candidates(
+        [
+            LiquidityPool("near_sellside_pool", "H4", "ERL", "sellside", 100),
+            LiquidityPool("range_high", "H4", "ERL", "buyside", 120),
+        ],
+        active_range,
+        candles,
+        sweeps=[],
+        displacement=DisplacementSignal(False),
+        structure=StructureSignal(False),
+        ssmt=detect_ssmt(candles, candles, candles[-1].time, StrategyConfig()),
+        time_context={"killzone": False},
+        config=StrategyConfig(),
+        htf_direction="sellside",
+    )
+    assert selection.selected is None
+    assert selection.ambiguous is True
+    assert selection.reason_code == "DOL_AMBIGUOUS"
+
+
+def test_ssmt_timestamp_mismatch_is_unavailable_and_warns():
+    start = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    primary = normalize_candles(
+        [candle(start + timedelta(minutes=15 * i), 100, 101 + i, 99, 100) for i in range(5)]
+    )
+    secondary = normalize_candles(
+        [candle(start + timedelta(minutes=15 * i + 5), 20, 21, 19, 20) for i in range(5)]
+    )
+    signal = detect_ssmt(primary, secondary, primary[-1].time, StrategyConfig())
+    assert signal.available is False
+    assert signal.detected is False
+    assert signal.sync_status == "timestamp_mismatch"
+    assert signal.warning == "SSMT_TIMESTAMP_MISMATCH"
+
+
+def test_pipeline_missing_d1_keeps_analysis_but_disables_previous_day_dol_candidates():
+    data = market(with_mss=True)
+    data["XAUUSD"]["D1"] = []
+    result = analyze_market(
+        data,
+        analysis_as_of=data["XAUUSD"]["M15"][-1]["time"],
+    )
+    assert "D1_MISSING" in result["warnings"]
+    assert result["data_coverage"]["status"] == "complete"
+    assert all(not candidate["label"].startswith("previous_day") for candidate in result["dol_candidates"])
+
+
+def test_pipeline_waits_when_current_price_is_outside_active_dealing_range():
+    data = market(with_mss=True)
+    rows = data["XAUUSD"]["M15"]
+    _set_index = -1
+    last_time = datetime.fromisoformat(rows[_set_index]["time"].replace("Z", "+00:00"))
+    rows[_set_index] = candle(last_time, 200, 201, 199, 200)
+    data["XAGUSD"]["M15"] = make_secondary_m15(rows)
+    result = analyze_market(
+        data,
+        analysis_as_of=rows[-1]["time"],
+    )
+    assert result["action"] == "WAIT"
+    assert result["trade_idea"]["reason_code"] == "NO_ACTIVE_DEALING_RANGE"
+    assert result["gate_result"]["passed"] is False

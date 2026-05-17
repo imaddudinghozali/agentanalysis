@@ -65,7 +65,7 @@ def score_dol_candidates(
             include_execution_factors,
         )
         for pool in pools
-        if _target_is_ahead(pool, current_price) and pool.direction == htf_direction
+        if _target_is_ahead(pool, current_price)
     ]
     candidates = sorted(candidates, key=lambda c: c.score, reverse=True)
     if not candidates:
@@ -116,20 +116,21 @@ def _score_pool(
     if htf_direction == pool.direction:
         score += 15
         reasoning.append("D1/H4/H1 narrative supports this draw")
-    if include_execution_factors:
+    execution_applicable = include_execution_factors and htf_direction in (None, "neutral", pool.direction)
+    if execution_applicable:
         opposite = "buyside" if pool.direction == "sellside" else "sellside"
         if any(sweep.direction == opposite for sweep in sweeps):
             score += 15
             reasoning.append(f"Recent opposite-side {opposite} sweep supports this draw")
     wanted_displacement = "bullish" if pool.direction == "buyside" else "bearish"
-    if include_execution_factors and displacement.detected and displacement.direction == wanted_displacement:
+    if execution_applicable and displacement.detected and displacement.direction == wanted_displacement:
         score += 10
         reasoning.append(f"{wanted_displacement.title()} displacement confirms direction")
-    if include_execution_factors and structure.detected and structure.direction == wanted_displacement:
+    if execution_applicable and structure.detected and structure.direction == wanted_displacement:
         score += 10
         reasoning.append(f"{wanted_displacement.title()} MSS confirms direction")
     wanted_ssmt = "bullish" if pool.direction == "buyside" else "bearish"
-    if include_execution_factors and ssmt.detected and ssmt.type == wanted_ssmt:
+    if execution_applicable and ssmt.detected and ssmt.type == wanted_ssmt:
         score += 5
         reasoning.append(f"{wanted_ssmt.title()} SSMT confirms manipulation")
     if getattr(time_context, "killzone", False):

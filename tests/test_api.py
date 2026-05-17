@@ -46,6 +46,26 @@ def test_webhook_upserts_duplicate_candle(tmp_path):
     assert candles[0]["last_close"] == 2404.0
 
 
+def test_webhook_rejects_invalid_symbol_and_naive_timestamp(tmp_path):
+    client = TestClient(create_app(tmp_path / "test.sqlite3"))
+    base_payload = {
+        "symbol": "XAUUSD",
+        "timeframe": "M15",
+        "time": "2026-05-16T08:30:00-04:00",
+        "open": 2400.1,
+        "high": 2405.2,
+        "low": 2398.5,
+        "close": 2403.3,
+        "volume": 1200,
+    }
+
+    invalid_symbol = client.post("/webhook/tradingview", json={**base_payload, "symbol": "EURUSD"})
+    naive_time = client.post("/webhook/tradingview", json={**base_payload, "time": "2026-05-16T08:30:00"})
+
+    assert invalid_symbol.status_code == 422
+    assert naive_time.status_code == 422
+
+
 def test_csv_import_and_analyze_returns_wait_schema(tmp_path, monkeypatch):
     db_path = tmp_path / "test.sqlite3"
     client = TestClient(create_app(db_path))
@@ -112,6 +132,8 @@ def test_csv_import_and_analyze_returns_wait_schema(tmp_path, monkeypatch):
 
     monkeypatch.setenv("TRADING_STRATEGY_DB_PATH", str(db_path))
     server = importlib.import_module("server")
+    assert server.MCP_IMPORT_ERROR is None
+    assert server.mcp is not None
     tool_args = {
         "primary_symbol": "XAUUSD",
         "secondary_symbol": "XAGUSD",
