@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Mapping, Sequence
 
 from .common import DataCoverage, RULE_VERSION, StrategyConfig, asdict_clean, normalize_candles, parse_time, timeframe_swing_params
+from .direction_liquidity import build_direction_liquidity_hierarchy
 from .displacement import detect_displacement
 from .dol import score_dol_candidates
 from .fvg import detect_fvg
@@ -36,6 +37,7 @@ def analyze_market(
     h1 = normalize_candles(primary.get("H1", []), as_of)
     h4 = normalize_candles(primary.get("H4", []), as_of)
     d1 = normalize_candles(primary.get("D1", []), as_of)
+    m5 = normalize_candles(primary.get("M5", []), as_of)
     secondary_m15 = normalize_candles(secondary.get(execution_timeframe, []), as_of)
     coverage = _data_coverage(
         m15=m15,
@@ -65,6 +67,15 @@ def analyze_market(
     ssmt = detect_ssmt(m15, secondary_m15, as_of, cfg)
     time_context = get_time_context(as_of)
     htf_candle_phase = build_htf_candle_phase(m15, as_of, "D1")
+    direction_liquidity = build_direction_liquidity_hierarchy(
+        m15=m15,
+        h1=h1,
+        h4=h4,
+        d1=d1,
+        m5=m5,
+        current_price=execution_price,
+        config=cfg,
+    )
     prefer_actionable_targets = mode.lower() in {"live", "tradingview"}
     pools = build_liquidity_pools(
         active_range,
@@ -83,6 +94,7 @@ def analyze_market(
         time_context,
         cfg,
         htf_direction=htf_narrative.direction,
+        direction_hierarchy=direction_liquidity,
         include_execution_factors=True,
         prefer_actionable_targets=prefer_actionable_targets,
     )
@@ -126,6 +138,7 @@ def analyze_market(
                 dol_selection.selected,
                 execution_price,
                 htf_candle_phase,
+                direction_liquidity,
             ),
             "liquidity": {
                 "recently_taken": sweeps,
@@ -217,6 +230,7 @@ def _htf_context(
     selected_dol: Any,
     current_price: float | None,
     htf_candle_phase: Any = None,
+    direction_liquidity: Any = None,
 ) -> dict[str, Any]:
     bias_source = _bias_source(htf_narrative)
     if active_range is None:
@@ -233,6 +247,7 @@ def _htf_context(
             "conflict": htf_narrative.conflict,
             "frames": htf_narrative.frames,
             "candle_phase": htf_candle_phase,
+            "direction_liquidity": direction_liquidity,
         }
     return {
         "dealing_range_high": active_range.high,
@@ -248,6 +263,7 @@ def _htf_context(
         "frames": htf_narrative.frames,
         "timeframe": active_range.timeframe,
         "candle_phase": htf_candle_phase,
+        "direction_liquidity": direction_liquidity,
     }
 
 

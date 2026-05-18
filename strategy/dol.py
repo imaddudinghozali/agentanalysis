@@ -42,6 +42,7 @@ def score_dol_candidates(
     time_context: object,
     config: StrategyConfig,
     htf_direction: str | None = None,
+    direction_hierarchy: object | None = None,
     include_execution_factors: bool = False,
     prefer_actionable_targets: bool = False,
 ) -> DOLSelection:
@@ -63,6 +64,7 @@ def score_dol_candidates(
             ssmt,
             time_context,
             htf_direction,
+            direction_hierarchy,
             include_execution_factors,
             prefer_actionable_targets,
         )
@@ -96,6 +98,7 @@ def _score_pool(
     ssmt: SSMTSignal,
     time_context: object,
     htf_direction: str | None,
+    direction_hierarchy: object | None,
     include_execution_factors: bool,
     prefer_actionable_targets: bool,
 ) -> DOLCandidate:
@@ -127,6 +130,19 @@ def _score_pool(
     if htf_direction == pool.direction:
         score += 15
         reasoning.append("D1/H4/H1 narrative supports this draw")
+    hierarchy_direction = getattr(direction_hierarchy, "dominant_direction", None)
+    active_level = getattr(direction_hierarchy, "active_level", None)
+    if hierarchy_direction == pool.direction:
+        score += 10
+        reasoning.append("Direction liquidity hierarchy supports this draw")
+        direction_timeframes = set(getattr(active_level, "direction_timeframes", []) or [])
+        irl_erl_timeframe = getattr(active_level, "irl_erl_timeframe", None)
+        if pool.timeframe in direction_timeframes or pool.timeframe == irl_erl_timeframe:
+            score += 5
+            reasoning.append(f"{pool.timeframe} aligns with active direction liquidity layer")
+    elif hierarchy_direction in {"buyside", "sellside"}:
+        score -= 10
+        reasoning.append("Direction liquidity hierarchy favors the opposite side")
     execution_applicable = include_execution_factors and htf_direction in (None, "neutral", pool.direction)
     if execution_applicable:
         opposite = "buyside" if pool.direction == "sellside" else "sellside"

@@ -150,6 +150,8 @@ function DataStatus({ analysis }) {
 function HtfContext({ analysis }) {
   const htf = analysis.htf_context ?? {};
   const phase = htf.candle_phase ?? {};
+  const directionLiquidity = htf.direction_liquidity ?? {};
+  const activeDirectionLevel = directionLiquidity.active_level ?? {};
   const rangeSize = htf.dealing_range_high - htf.dealing_range_low;
   const rangePosition =
     typeof htf.current_price === "number" && rangeSize > 0
@@ -167,6 +169,13 @@ function HtfContext({ analysis }) {
         <Metric
           label="HTF O/H/L/C"
           value={`${formatPrice(phase.open)} / ${formatPrice(phase.high)} / ${formatPrice(phase.low)} / ${formatPrice(phase.close)}`}
+        />
+        <Metric
+          label="Direction layer"
+          value={formatLabel(directionLiquidity.dominant_direction)}
+          sub={`${activeDirectionLevel.parent_timeframe ?? "NA"} > ${activeDirectionLevel.irl_erl_timeframe ?? "NA"} > ${(
+            activeDirectionLevel.direction_timeframes ?? []
+          ).join("/") || "NA"}`}
         />
       </div>
       <div className="range-track" aria-label="Dealing range">
