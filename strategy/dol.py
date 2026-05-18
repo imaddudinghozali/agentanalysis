@@ -70,7 +70,7 @@ def score_dol_candidates(
     candidates = sorted(candidates, key=lambda c: c.score, reverse=True)
     if not candidates:
         return DOLSelection(None, [], reason_code="UNCLEAR_DOL")
-    selected = _select_with_tiebreakers(candidates, current_price)
+    selected = _select_with_tiebreakers(candidates, current_price, prefer_range_boundary=structure.detected)
     if len(candidates) > 1:
         runner_up = candidates[1] if candidates[0] == selected else candidates[0]
         if selected.direction != runner_up.direction and abs(selected.score - runner_up.score) <= 5:
@@ -167,13 +167,18 @@ def _target_is_ahead(pool: LiquidityPool, current_price: float) -> bool:
     return pool.price < current_price
 
 
-def _select_with_tiebreakers(candidates: Sequence[DOLCandidate], current_price: float) -> DOLCandidate:
+def _select_with_tiebreakers(
+    candidates: Sequence[DOLCandidate],
+    current_price: float,
+    prefer_range_boundary: bool = False,
+) -> DOLCandidate:
     top_score = candidates[0].score
     close = [candidate for candidate in candidates if top_score - candidate.score <= 10]
     close = sorted(
         close,
         key=lambda c: (
             c.score,
+            1 if prefer_range_boundary and c.label in {"active_range_high", "active_range_low"} else 0,
             1 if c.liquidity_type == "ERL" else 0,
             1 if c.timeframe == "H4" else 0,
             -abs(c.price - current_price),

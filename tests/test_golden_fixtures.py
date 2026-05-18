@@ -171,6 +171,15 @@ def test_analysis_manifests_execute_expected_oracles(tmp_path):
         assert body["active_model"] == manifest["expected_active_model"], manifest["fixture_id"]
         assert next_dol.get("label") == manifest["expected_dol_label"], manifest["fixture_id"]
         assert body["trade_idea"]["reason_code"] == manifest["expected_reason_code"], manifest["fixture_id"]
+        required_confirmations = manifest["required_confirmations"]
+        if "bullish_ssmt" in required_confirmations:
+            assert body["ssmt"]["detected"] is required_confirmations["bullish_ssmt"], manifest["fixture_id"]
+            if required_confirmations["bullish_ssmt"]:
+                assert body["ssmt"]["type"] == "bullish", manifest["fixture_id"]
+        if "bearish_ssmt" in required_confirmations:
+            assert body["ssmt"]["detected"] is required_confirmations["bearish_ssmt"], manifest["fixture_id"]
+            if required_confirmations["bearish_ssmt"]:
+                assert body["ssmt"]["type"] == "bearish", manifest["fixture_id"]
         for path in PRD_REQUIRED_JSON_PATHS:
             _json_path_value(body, path)
         if body["action"] in {"BUY", "SELL"}:

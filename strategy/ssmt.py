@@ -42,20 +42,26 @@ def detect_ssmt(
     mismatch_minutes = abs((primary_latest.time - secondary_latest.time).total_seconds()) / 60.0
     if mismatch_minutes > config.ssmt_alignment_tolerance_minutes:
         return SSMTSignal(False, False, sync_status="timestamp_mismatch", warning="SSMT_TIMESTAMP_MISMATCH")
-    primary_window = list(primary[-lookback:])
-    secondary_window = list(secondary[-lookback:])
-    if len(primary_window) < 3 or len(secondary_window) < 3:
-        return SSMTSignal(False, False, sync_status="insufficient_data", warning="SSMT_UNAVAILABLE")
-    p_prev = primary_window[:-1]
-    s_prev = secondary_window[:-1]
-    p_last = primary_window[-1]
-    s_last = secondary_window[-1]
-    primary_lower_low = p_last.low < min(c.low for c in p_prev)
-    secondary_lower_low = s_last.low < min(c.low for c in s_prev)
-    primary_higher_high = p_last.high > max(c.high for c in p_prev)
-    secondary_higher_high = s_last.high > max(c.high for c in s_prev)
-    if primary_lower_low and not secondary_lower_low:
-        return SSMTSignal(True, True, "bullish", "medium", "aligned", p_last.time, p_last.low, s_last.low)
-    if primary_higher_high and not secondary_higher_high:
-        return SSMTSignal(True, True, "bearish", "medium", "aligned", p_last.time, p_last.high, s_last.high)
+    secondary_index_by_time = {c.time: index for index, c in enumerate(secondary)}
+    scan_start = max(1, len(primary) - lookback)
+    for primary_index in range(len(primary) - 1, scan_start - 1, -1):
+        p_last = primary[primary_index]
+        secondary_index = secondary_index_by_time.get(p_last.time)
+        if secondary_index is None:
+            continue
+        if secondary_index < 1:
+            continue
+        s_last = secondary[secondary_index]
+        p_prev = list(primary[max(0, primary_index - lookback) : primary_index])
+        s_prev = list(secondary[max(0, secondary_index - lookback) : secondary_index])
+        if len(p_prev) < 2 or len(s_prev) < 2:
+            continue
+        primary_lower_low = p_last.low < min(c.low for c in p_prev)
+        secondary_lower_low = s_last.low < min(c.low for c in s_prev)
+        primary_higher_high = p_last.high > max(c.high for c in p_prev)
+        secondary_higher_high = s_last.high > max(c.high for c in s_prev)
+        if primary_lower_low and not secondary_lower_low:
+            return SSMTSignal(True, True, "bullish", "medium", "aligned", p_last.time, p_last.low, s_last.low)
+        if primary_higher_high and not secondary_higher_high:
+            return SSMTSignal(True, True, "bearish", "medium", "aligned", p_last.time, p_last.high, s_last.high)
     return SSMTSignal(True, False, None, "none", "aligned")
