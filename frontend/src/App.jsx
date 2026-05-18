@@ -149,6 +149,7 @@ function DataStatus({ analysis }) {
 
 function HtfContext({ analysis }) {
   const htf = analysis.htf_context ?? {};
+  const phase = htf.candle_phase ?? {};
   const rangeSize = htf.dealing_range_high - htf.dealing_range_low;
   const rangePosition =
     typeof htf.current_price === "number" && rangeSize > 0
@@ -162,6 +163,11 @@ function HtfContext({ analysis }) {
         <Metric label="Location" value={formatLabel(htf.current_position)} />
         <Metric label="DOL direction" value={formatLabel(htf.dol_direction)} />
         <Metric label="Current / EQ" value={`${formatPrice(htf.current_price)} / ${formatPrice(htf.equilibrium)}`} />
+        <Metric label="HTF candle" value={phase.pattern ?? "Unavailable"} sub={formatLabel(phase.current_leg)} />
+        <Metric
+          label="HTF O/H/L/C"
+          value={`${formatPrice(phase.open)} / ${formatPrice(phase.high)} / ${formatPrice(phase.low)} / ${formatPrice(phase.close)}`}
+        />
       </div>
       <div className="range-track" aria-label="Dealing range">
         <span>{formatPrice(htf.dealing_range_low)}</span>

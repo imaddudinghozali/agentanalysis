@@ -7,6 +7,7 @@ from strategy.common import Candle
 from strategy.displacement import DisplacementSignal
 from strategy.dol import score_dol_candidates
 from strategy.liquidity import LiquidityPool
+from strategy.ohlc import build_htf_candle_phase
 from strategy.range import DealingRange
 from strategy.ssmt import detect_ssmt
 from strategy.structure import StructureSignal
@@ -120,6 +121,27 @@ def test_detect_swings_finds_local_high_and_low():
     assert [(s.kind, s.price) for s in swings] == [("high", 106.0), ("low", 94.0)]
 
 
+def test_htf_candle_phase_detects_olhc_sequence_from_m15_candles():
+    start = datetime(2026, 5, 18, tzinfo=timezone.utc)
+    rows = normalize_candles(
+        [
+            candle(start, 100, 101, 99, 100),
+            candle(start + timedelta(minutes=15), 100, 100.5, 95, 96),
+            candle(start + timedelta(minutes=30), 96, 106, 96, 105),
+            candle(start + timedelta(minutes=45), 105, 105.5, 103, 104),
+        ]
+    )
+
+    phase = build_htf_candle_phase(rows, rows[-1].time, "D1")
+
+    assert phase is not None
+    assert phase.pattern == "OLHC"
+    assert phase.current_leg == "high_to_close"
+    assert phase.completed_legs == ["open_to_low", "low_to_high"]
+    assert phase.low == 95
+    assert phase.high == 106
+
+
 def test_ssmt_detects_bearish_divergence_when_primary_sweeps_high_and_secondary_fails():
     start = datetime(2026, 5, 1, tzinfo=timezone.utc)
     primary = normalize_candles(
@@ -148,6 +170,8 @@ def test_pipeline_all_bearish_confirmations_allows_sell():
     assert result["confirmation"] == {"sweep": True, "displacement": True, "mss": True, "fvg": True}
     assert result["liquidity"]["next_dol"]["score"] >= 60
     assert result["htf_context"]["narrative_status"] == "complete"
+    assert result["htf_context"]["candle_phase"]["pattern"] in {"OHLC", "OLHC", "UNRESOLVED"}
+    assert result["htf_context"]["candle_phase"]["current_leg"]
     assert result["htf_context"]["narrative_direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["confidence"] == "high"

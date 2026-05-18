@@ -9,6 +9,7 @@ from .fvg import detect_fvg
 from .htf import build_htf_narrative
 from .liquidity import build_liquidity_pools, detect_sweeps, latest_sweep
 from .narrative import build_narrative
+from .ohlc import build_htf_candle_phase
 from .range import build_active_dealing_range
 from .ssmt import detect_ssmt
 from .structure import detect_mss
@@ -63,6 +64,7 @@ def analyze_market(
     fvg = detect_fvg(m15, cfg, expected_fvg_direction)
     ssmt = detect_ssmt(m15, secondary_m15, as_of, cfg)
     time_context = get_time_context(as_of)
+    htf_candle_phase = build_htf_candle_phase(m15, as_of, "D1")
     prefer_actionable_targets = mode.lower() in {"live", "tradingview"}
     pools = build_liquidity_pools(
         active_range,
@@ -118,7 +120,13 @@ def analyze_market(
             "action": trade.trade_idea.action,
             "data_coverage": coverage,
             "time_context": time_context,
-            "htf_context": _htf_context(active_range, htf_narrative, dol_selection.selected, execution_price),
+            "htf_context": _htf_context(
+                active_range,
+                htf_narrative,
+                dol_selection.selected,
+                execution_price,
+                htf_candle_phase,
+            ),
             "liquidity": {
                 "recently_taken": sweeps,
                 "next_dol": dol_selection.selected or _unavailable_dol(dol_selection.reason_code),
@@ -203,7 +211,13 @@ def _data_coverage(
     )
 
 
-def _htf_context(active_range: Any, htf_narrative: Any, selected_dol: Any, current_price: float | None) -> dict[str, Any]:
+def _htf_context(
+    active_range: Any,
+    htf_narrative: Any,
+    selected_dol: Any,
+    current_price: float | None,
+    htf_candle_phase: Any = None,
+) -> dict[str, Any]:
     bias_source = _bias_source(htf_narrative)
     if active_range is None:
         return {
@@ -218,6 +232,7 @@ def _htf_context(active_range: Any, htf_narrative: Any, selected_dol: Any, curre
             "narrative_status": htf_narrative.status,
             "conflict": htf_narrative.conflict,
             "frames": htf_narrative.frames,
+            "candle_phase": htf_candle_phase,
         }
     return {
         "dealing_range_high": active_range.high,
@@ -232,6 +247,7 @@ def _htf_context(active_range: Any, htf_narrative: Any, selected_dol: Any, curre
         "conflict": htf_narrative.conflict,
         "frames": htf_narrative.frames,
         "timeframe": active_range.timeframe,
+        "candle_phase": htf_candle_phase,
     }
 
 
