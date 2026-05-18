@@ -43,6 +43,7 @@ def score_dol_candidates(
     config: StrategyConfig,
     htf_direction: str | None = None,
     include_execution_factors: bool = False,
+    prefer_actionable_targets: bool = False,
 ) -> DOLSelection:
     if active_range is None or not m15_candles:
         return DOLSelection(None, [], reason_code="NO_ACTIVE_DEALING_RANGE")
@@ -63,6 +64,7 @@ def score_dol_candidates(
             time_context,
             htf_direction,
             include_execution_factors,
+            prefer_actionable_targets,
         )
         for pool in pools
         if _target_is_ahead(pool, current_price)
@@ -70,7 +72,12 @@ def score_dol_candidates(
     candidates = sorted(candidates, key=lambda c: c.score, reverse=True)
     if not candidates:
         return DOLSelection(None, [], reason_code="UNCLEAR_DOL")
-    selected = _select_with_tiebreakers(candidates, current_price, prefer_range_boundary=structure.detected)
+    selected = _select_with_tiebreakers(
+        candidates,
+        current_price,
+        prefer_range_boundary=structure.detected and not prefer_actionable_targets,
+        prefer_current_day=prefer_actionable_targets,
+    )
     if len(candidates) > 1:
         runner_up = candidates[1] if candidates[0] == selected else candidates[0]
         if selected.direction != runner_up.direction and abs(selected.score - runner_up.score) <= 5:
@@ -90,6 +97,7 @@ def _score_pool(
     time_context: object,
     htf_direction: str | None,
     include_execution_factors: bool,
+    prefer_actionable_targets: bool,
 ) -> DOLCandidate:
     score = 0
     reasoning: list[str] = []
@@ -101,6 +109,9 @@ def _score_pool(
         reasoning.append(f"{pool.label} is internal range liquidity")
     else:
         score += 5
+    if prefer_actionable_targets and pool.source == "current_day":
+        score += 20
+        reasoning.append("Current-day liquidity is actionable for today's DOL")
     if active_range.current_position == "premium" and pool.direction == "sellside":
         score += 20
         reasoning.append("HTF price is trading in premium")
@@ -137,14 +148,7 @@ def _score_pool(
         score += 5
         reasoning.append("Analysis is inside London/New York killzone")
     distance_atr = abs(pool.price - current_price) / atr if atr > 0 else 0
-    if distance_atr > 8:
-        penalty = 15
-    elif distance_atr > 5:
-        penalty = 10
-    elif distance_atr > 3:
-        penalty = 5
-    else:
-        penalty = 0
+    penalty = _distance_penalty(distance_atr, prefer_actionable_targets)
     score -= penalty
     if penalty:
         reasoning.append(f"Target proximity penalty: -{penalty}")
@@ -171,6 +175,7 @@ def _select_with_tiebreakers(
     candidates: Sequence[DOLCandidate],
     current_price: float,
     prefer_range_boundary: bool = False,
+    prefer_current_day: bool = False,
 ) -> DOLCandidate:
     top_score = candidates[0].score
     close = [candidate for candidate in candidates if top_score - candidate.score <= 10]
@@ -178,6 +183,7 @@ def _select_with_tiebreakers(
         close,
         key=lambda c: (
             c.score,
+            1 if prefer_current_day and c.label in {"current_day_high", "current_day_low"} else 0,
             1 if prefer_range_boundary and c.label in {"active_range_high", "active_range_low"} else 0,
             1 if c.liquidity_type == "ERL" else 0,
             1 if c.timeframe == "H4" else 0,
@@ -186,3 +192,29 @@ def _select_with_tiebreakers(
         reverse=True,
     )
     return close[0]
+
+
+def _distance_penalty(distance_atr: float, prefer_actionable_targets: bool) -> int:
+    if not prefer_actionable_targets:
+        if distance_atr > 8:
+            return 15
+        if distance_atr > 5:
+            return 10
+        if distance_atr > 3:
+            return 5
+        return 0
+    if distance_atr > 30:
+        return 60
+    if distance_atr > 20:
+        return 45
+    if distance_atr > 12:
+        return 30
+    if distance_atr > 8:
+        return 20
+    if distance_atr > 5:
+        return 15
+    if distance_atr > 3:
+        return 10
+    if distance_atr > 1.5:
+        return 5
+    return 0

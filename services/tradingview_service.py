@@ -67,7 +67,7 @@ class TradingViewMarketDataService:
                 execution_timeframe="M15",
                 context_timeframes=["H4", "H1", "D1"],
                 analysis_as_of=analysis_as_of,
-                mode="normal",
+                mode="live",
             )
         )
         result["market_data_source"] = {

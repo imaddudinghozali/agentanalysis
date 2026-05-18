@@ -39,6 +39,7 @@ def build_liquidity_pools(
     active_range: DealingRange | None,
     swings_by_tf: dict[str, Sequence[SwingPoint]],
     d1_candles: Sequence[Candle] | None = None,
+    execution_candles: Sequence[Candle] | None = None,
 ) -> list[LiquidityPool]:
     pools: list[LiquidityPool] = []
     if active_range is not None:
@@ -70,6 +71,31 @@ def build_liquidity_pools(
         pools.append(
             LiquidityPool("previous_day_low", "D1", "ERL", "sellside", previous.low, "daily")
         )
+    if execution_candles:
+        current_day = _current_day_candles(execution_candles)
+        if len(current_day) >= 4:
+            current_day_high = max(current_day, key=lambda candle: candle.high)
+            current_day_low = min(current_day, key=lambda candle: candle.low)
+            pools.append(
+                LiquidityPool(
+                    "current_day_high",
+                    "M15",
+                    "ERL",
+                    "buyside",
+                    current_day_high.high,
+                    "current_day",
+                )
+            )
+            pools.append(
+                LiquidityPool(
+                    "current_day_low",
+                    "M15",
+                    "ERL",
+                    "sellside",
+                    current_day_low.low,
+                    "current_day",
+                )
+            )
     for timeframe, swings in swings_by_tf.items():
         for swing in swings[-12:]:
             direction = "buyside" if swing.kind == "high" else "sellside"
@@ -84,6 +110,13 @@ def build_liquidity_pools(
                 )
             )
     return _dedupe_pools(pools)
+
+
+def _current_day_candles(candles: Sequence[Candle]) -> list[Candle]:
+    if not candles:
+        return []
+    current_date = candles[-1].time.date()
+    return [candle for candle in candles if candle.time.date() == current_date]
 
 
 def detect_sweeps(

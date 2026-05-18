@@ -250,6 +250,45 @@ def test_dol_scoring_returns_ambiguous_when_opposite_targets_are_close():
     assert selection.reason_code == "DOL_AMBIGUOUS"
 
 
+def test_live_dol_scoring_prefers_current_day_liquidity_over_far_macro_target():
+    start = datetime(2026, 5, 18, tzinfo=timezone.utc)
+    candles = normalize_candles(
+        [candle(start + timedelta(minutes=15 * i), 100, 101, 99, 100) for i in range(24)]
+    )
+    active_range = DealingRange(
+        timeframe="H4",
+        high=110,
+        low=0,
+        high_time=start,
+        low_time=start,
+        equilibrium=55,
+        current_position="premium",
+        current_price=100,
+        direction_hint="sellside",
+    )
+    selection = score_dol_candidates(
+        [
+            LiquidityPool("active_range_low", "H4", "ERL", "sellside", 0, "active_range"),
+            LiquidityPool("current_day_low", "M15", "ERL", "sellside", 96, "current_day"),
+        ],
+        active_range,
+        candles,
+        sweeps=[],
+        displacement=DisplacementSignal(False),
+        structure=StructureSignal(False),
+        ssmt=detect_ssmt(candles, candles, candles[-1].time, StrategyConfig()),
+        time_context={"killzone": False},
+        config=StrategyConfig(),
+        htf_direction="sellside",
+        prefer_actionable_targets=True,
+    )
+
+    assert selection.selected is not None
+    assert selection.selected.label == "current_day_low"
+    assert selection.candidates[-1].label == "active_range_low"
+    assert any("Current-day liquidity" in reason for reason in selection.selected.reasoning)
+
+
 def test_ssmt_timestamp_mismatch_is_unavailable_and_warns():
     start = datetime(2026, 5, 1, tzinfo=timezone.utc)
     primary = normalize_candles(

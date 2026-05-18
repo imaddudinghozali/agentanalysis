@@ -63,7 +63,13 @@ def analyze_market(
     fvg = detect_fvg(m15, cfg, expected_fvg_direction)
     ssmt = detect_ssmt(m15, secondary_m15, as_of, cfg)
     time_context = get_time_context(as_of)
-    pools = build_liquidity_pools(active_range, htf_swings, d1)
+    prefer_actionable_targets = mode.lower() in {"live", "tradingview"}
+    pools = build_liquidity_pools(
+        active_range,
+        htf_swings,
+        d1,
+        execution_candles=m15 if prefer_actionable_targets else None,
+    )
     dol_selection = score_dol_candidates(
         pools,
         active_range,
@@ -76,6 +82,7 @@ def analyze_market(
         cfg,
         htf_direction=htf_narrative.direction,
         include_execution_factors=True,
+        prefer_actionable_targets=prefer_actionable_targets,
     )
     warnings = list(coverage.warnings)
     if htf_narrative.reason_code in {"HTF_CONFLICT", "MISSING_HTF_CONTEXT"} and htf_narrative.reason_code not in warnings:
