@@ -71,7 +71,7 @@ Quick local dashboard:
 Double-click run_dashboard.bat
 ```
 
-The launcher starts the API, starts the Vite dashboard, and opens `http://127.0.0.1:5173`.
+The launcher starts the API, builds the dashboard, starts Vite preview, and opens `http://127.0.0.1:4173`.
 Use **TradingView Live** in the dashboard to fetch current OANDA XAUUSD/XAGUSD candles and run analysis.
 
 ```bash
