@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 
 from app import create_app
+from services.tradingview_service import TradingViewFetchError
 
 
 def _csv_rows(start: datetime, count: int, base: float = 2400.0, step_minutes: int = 15) -> str:
@@ -201,3 +202,43 @@ def test_analyze_waits_when_market_data_is_stale(tmp_path):
     assert body["gate_result"]["passed"] is False
     assert "STALE_DATA" in body["warnings"]
     assert "STALE_XAUUSD_M15" in body["warnings"]
+
+
+def test_tradingview_analyze_endpoint_returns_live_payload(tmp_path):
+    class FakeTradingViewService:
+        async def refresh_and_analyze(self, analysis_service):
+            return {
+                "action": "WAIT",
+                "analysis_as_of": "2026-05-18T10:00:00Z",
+                "market_data_source": {
+                    "provider": "TradingView",
+                    "exchange": "OANDA",
+                    "series": [{"symbol": "XAUUSD", "timeframe": "M15", "rows_imported": 259}],
+                },
+            }
+
+    app = create_app(tmp_path / "test.sqlite3")
+    app.state.tradingview_service = FakeTradingViewService()
+    client = TestClient(app)
+
+    response = client.post("/api/tradingview/analyze")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["action"] == "WAIT"
+    assert body["market_data_source"]["provider"] == "TradingView"
+
+
+def test_tradingview_analyze_endpoint_maps_fetch_errors(tmp_path):
+    class FakeTradingViewService:
+        async def refresh_and_analyze(self, analysis_service):
+            raise TradingViewFetchError("TradingView unavailable")
+
+    app = create_app(tmp_path / "test.sqlite3")
+    app.state.tradingview_service = FakeTradingViewService()
+    client = TestClient(app)
+
+    response = client.post("/api/tradingview/analyze")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "TradingView unavailable"

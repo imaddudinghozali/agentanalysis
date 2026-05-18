@@ -60,6 +60,7 @@ input {
   gap: 10px;
   align-items: end;
   justify-content: end;
+  flex-wrap: wrap;
 }
 
 .api-controls label {
@@ -95,6 +96,12 @@ input {
   color: #ffffff;
   cursor: pointer;
   font-weight: 800;
+}
+
+.icon-button-secondary {
+  border: 1px solid #bec9c5;
+  background: #ffffff;
+  color: #175e5a;
 }
 
 .icon-button:disabled {
@@ -206,6 +213,22 @@ input {
   display: grid;
   gap: 8px;
   margin: 14px 0;
+}
+
+.source-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.source-strip span {
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #eef6f4;
+  color: #175e5a;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .feed-row {

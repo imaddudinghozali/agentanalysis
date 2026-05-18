@@ -12,3 +12,9 @@ def test_decorative_dashboard_icons_are_hidden_from_screen_readers():
     # Report: .gstack/qa-reports/qa-report-localhost-2026-05-18.md
     app_source = Path("frontend/src/App.jsx").read_text(encoding="utf-8")
     assert 'aria-hidden="true"' in app_source
+
+
+def test_dashboard_can_request_tradingview_live_analysis():
+    app_source = Path("frontend/src/App.jsx").read_text(encoding="utf-8")
+    assert "/api/tradingview/analyze" in app_source
+    assert "TradingView Live" in app_source

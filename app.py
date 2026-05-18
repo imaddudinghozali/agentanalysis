@@ -13,6 +13,7 @@ from schemas.candle import CandlePayload
 from schemas.market import AnalysisRequest
 from services.analysis_service import AnalysisService
 from services.ingestion_service import IngestionService
+from services.tradingview_service import TradingViewFetchError, TradingViewMarketDataService
 from storage.candles import CandleRepository
 from storage.database import init_db
 
@@ -21,6 +22,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     repository = CandleRepository(db_path)
     ingestion_service = IngestionService(repository)
     analysis_service = AnalysisService(repository)
+    tradingview_service = TradingViewMarketDataService(repository)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -100,6 +102,13 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     def report(request: AnalysisRequest) -> dict[str, Any]:
         return analysis_service.report(request)
 
+    @app.post("/api/tradingview/analyze")
+    async def tradingview_analyze() -> dict[str, Any]:
+        try:
+            return await app.state.tradingview_service.refresh_and_analyze(analysis_service)
+        except TradingViewFetchError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
     @app.get("/api/status")
     def status() -> dict[str, Any]:
         return analysis_service.status()
@@ -107,6 +116,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     app.state.repository = repository
     app.state.ingestion_service = ingestion_service
     app.state.analysis_service = analysis_service
+    app.state.tradingview_service = tradingview_service
     return app
 
 

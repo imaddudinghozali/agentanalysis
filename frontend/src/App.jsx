@@ -60,9 +60,9 @@ function StatusPill({ children, tone = "neutral" }) {
   return <span className={`pill pill-${tone}`}>{children}</span>;
 }
 
-function IconButton({ label, onClick, busy }) {
+function IconButton({ label, onClick, busy, variant = "primary" }) {
   return (
-    <button className="icon-button" type="button" onClick={onClick} disabled={busy} title={label}>
+    <button className={`icon-button icon-button-${variant}`} type="button" onClick={onClick} disabled={busy} title={label}>
       {busy ? (
         <LoaderCircle size={18} className="spin" aria-hidden="true" />
       ) : (
@@ -97,6 +97,7 @@ function Metric({ label, value, sub }) {
 
 function DataStatus({ analysis }) {
   const coverage = analysis.data_coverage ?? {};
+  const liveSource = analysis.market_data_source;
   const lastCandles = coverage.last_candles ?? {};
   const counts = coverage.counts ?? {};
   const missing = coverage.missing ?? [];
@@ -109,7 +110,17 @@ function DataStatus({ analysis }) {
           {formatLabel(coverage.status)}
         </StatusPill>
         {coverage.degraded_mode ? <StatusPill tone="warn">Degraded mode</StatusPill> : null}
+        {liveSource ? <StatusPill tone="good">{liveSource.provider} {liveSource.exchange}</StatusPill> : null}
       </div>
+      {liveSource?.series?.length ? (
+        <div className="source-strip">
+          {liveSource.series.map((item) => (
+            <span key={`${item.symbol}-${item.timeframe}`}>
+              {item.symbol} {item.timeframe}: {item.rows_imported} rows
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="feed-list">
         {Object.entries(lastCandles).map(([key, time]) => (
           <div className="feed-row" key={key}>
@@ -303,7 +314,7 @@ function Narrative({ analysis }) {
 export default function App() {
   const [analysis, setAnalysis] = useState(sampleAnalysis);
   const [apiBase, setApiBase] = useState("http://127.0.0.1:8000");
-  const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState("");
   const [error, setError] = useState("");
 
   const subtitle = useMemo(
@@ -313,7 +324,7 @@ export default function App() {
   );
 
   async function refreshAnalysis() {
-    setBusy(true);
+    setBusyAction("analyze");
     setError("");
     try {
       const response = await fetch(`${apiBase.replace(/\/$/, "")}/api/analyze`, {
@@ -330,7 +341,27 @@ export default function App() {
       setError(refreshError.message);
       setAnalysis(sampleAnalysis);
     } finally {
-      setBusy(false);
+      setBusyAction("");
+    }
+  }
+
+  async function refreshTradingView() {
+    setBusyAction("tradingview");
+    setError("");
+    try {
+      const response = await fetch(`${apiBase.replace(/\/$/, "")}/api/tradingview/analyze`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.detail || `TradingView API returned ${response.status}`);
+      }
+      const nextAnalysis = await response.json();
+      setAnalysis(nextAnalysis);
+    } catch (refreshError) {
+      setError(refreshError.message);
+    } finally {
+      setBusyAction("");
     }
   }
 
@@ -347,7 +378,17 @@ export default function App() {
             <span>API</span>
             <input value={apiBase} onChange={(event) => setApiBase(event.target.value)} />
           </label>
-          <IconButton label="Refresh" onClick={refreshAnalysis} busy={busy} />
+          <IconButton
+            label="Analyze DB"
+            onClick={refreshAnalysis}
+            busy={busyAction === "analyze"}
+            variant="secondary"
+          />
+          <IconButton
+            label="TradingView Live"
+            onClick={refreshTradingView}
+            busy={busyAction === "tradingview"}
+          />
         </div>
       </section>
 
