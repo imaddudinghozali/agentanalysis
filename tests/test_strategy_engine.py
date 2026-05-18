@@ -168,6 +168,37 @@ def test_direction_liquidity_hierarchy_prioritizes_daily_to_h1_to_m15_layer():
 
 
 def test_ssmt_detects_bearish_divergence_when_primary_sweeps_high_and_secondary_fails():
+    start = datetime(2026, 5, 1, 5, tzinfo=timezone.utc)
+    primary = normalize_candles(
+        [
+            candle(start, 100, 101, 99, 100),
+            candle(start + timedelta(minutes=15), 100, 102, 99, 100),
+            candle(start + timedelta(minutes=30), 100, 104, 99, 101),
+            candle(start + timedelta(minutes=45), 101, 103, 100, 101),
+            candle(start + timedelta(minutes=60), 101, 108, 100, 103),
+        ]
+    )
+    secondary = normalize_candles(
+        [
+            candle(start, 20, 21, 19, 20),
+            candle(start + timedelta(minutes=15), 20, 22, 19, 20),
+            candle(start + timedelta(minutes=30), 20, 24, 19, 21),
+            candle(start + timedelta(minutes=45), 21, 23, 20, 21),
+            candle(start + timedelta(minutes=60), 21, 23.5, 20, 22),
+        ]
+    )
+    signal = detect_ssmt(primary, secondary, primary[-1].time, StrategyConfig())
+    assert signal.available is True
+    assert signal.detected is True
+    assert signal.type == "bearish"
+    assert signal.sync_status == "aligned"
+    assert signal.quality == "high"
+    assert signal.sequence == "sequential"
+    assert signal.reference_quarter == "2026-05-01Q1"
+    assert signal.primary_quarter == "2026-05-01Q2"
+
+
+def test_ssmt_rejects_same_quarter_divergence_as_non_sequential():
     start = datetime(2026, 5, 1, tzinfo=timezone.utc)
     primary = normalize_candles(
         [candle(start + timedelta(minutes=15 * i), 100, 101 + i, 99, 100) for i in range(5)]
@@ -175,11 +206,46 @@ def test_ssmt_detects_bearish_divergence_when_primary_sweeps_high_and_secondary_
     secondary = normalize_candles(
         [candle(start + timedelta(minutes=15 * i), 20, 21, 19, 20) for i in range(5)]
     )
+
     signal = detect_ssmt(primary, secondary, primary[-1].time, StrategyConfig())
+
     assert signal.available is True
-    assert signal.detected is True
-    assert signal.type == "bearish"
-    assert signal.sync_status == "aligned"
+    assert signal.detected is False
+    assert signal.sync_status == "non_sequential_quarter"
+    assert signal.sequence == "non_sequential"
+
+
+def test_ssmt_marks_delivered_divergence_as_magneto_not_active_signal():
+    start = datetime(2026, 5, 1, 5, tzinfo=timezone.utc)
+    primary = normalize_candles(
+        [
+            candle(start, 100, 101, 99, 100),
+            candle(start + timedelta(minutes=15), 100, 102, 99, 100),
+            candle(start + timedelta(minutes=30), 100, 104, 99, 101),
+            candle(start + timedelta(minutes=45), 101, 103, 100, 101),
+            candle(start + timedelta(minutes=60), 101, 108, 100, 103),
+            candle(start + timedelta(minutes=75), 103, 104, 98, 99),
+        ]
+    )
+    secondary = normalize_candles(
+        [
+            candle(start, 20, 21, 19, 20),
+            candle(start + timedelta(minutes=15), 20, 22, 19, 20),
+            candle(start + timedelta(minutes=30), 20, 24, 19, 21),
+            candle(start + timedelta(minutes=45), 21, 23, 20, 21),
+            candle(start + timedelta(minutes=60), 21, 23.5, 20, 22),
+            candle(start + timedelta(minutes=75), 22, 23, 19, 20),
+        ]
+    )
+
+    signal = detect_ssmt(primary, secondary, primary[-1].time, StrategyConfig())
+
+    assert signal.available is True
+    assert signal.detected is False
+    assert signal.quality == "magneto"
+    assert signal.sync_status == "magneto"
+    assert signal.magneto is True
+    assert signal.magneto_level == 99
 
 
 def test_pipeline_all_bearish_confirmations_allows_sell():

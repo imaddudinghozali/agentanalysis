@@ -25,7 +25,7 @@
     "expected_reason_code":  "GATE_COMPLETE",
     "required_confirmations":  {
                                    "m15_buyside_sweep":  true,
-                                   "bearish_ssmt":  true,
+                                   "bearish_ssmt":  false,
                                    "bearish_displacement":  true,
                                    "bearish_mss":  true,
                                    "bearish_fvg":  true

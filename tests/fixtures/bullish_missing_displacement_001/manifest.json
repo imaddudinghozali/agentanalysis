@@ -25,7 +25,7 @@
     "expected_reason_code":  "MISSING_DISPLACEMENT",
     "required_confirmations":  {
                                    "m15_sellside_sweep":  true,
-                                   "bullish_ssmt":  true,
+                                   "bullish_ssmt":  false,
                                    "bullish_displacement":  false,
                                    "bullish_mss":  true,
                                    "bullish_fvg":  true

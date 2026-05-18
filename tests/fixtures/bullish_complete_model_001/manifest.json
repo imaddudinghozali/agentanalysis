@@ -25,7 +25,7 @@
     "expected_reason_code":  "GATE_COMPLETE",
     "required_confirmations":  {
                                    "m15_sellside_sweep":  true,
-                                   "bullish_ssmt":  true,
+                                   "bullish_ssmt":  false,
                                    "bullish_displacement":  true,
                                    "bullish_mss":  true,
                                    "bullish_fvg":  true

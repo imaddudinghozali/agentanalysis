@@ -264,8 +264,12 @@ function SsmtPanel({ analysis }) {
         <Metric label="Detected" value={ssmt.detected ? "Yes" : "No"} />
         <Metric label="Type" value={formatLabel(ssmt.type)} />
         <Metric label="Sync" value={formatLabel(ssmt.sync_status)} />
+        <Metric label="Sequence" value={formatLabel(ssmt.sequence)} />
+        <Metric label="Quarters" value={`${ssmt.reference_quarter ?? "NA"} > ${ssmt.primary_quarter ?? "NA"}`} />
       </div>
-      <StatusPill tone={tone}>{ssmt.quality ? `${ssmt.quality} quality` : "No divergence"}</StatusPill>
+      <StatusPill tone={ssmt.magneto ? "warn" : tone}>
+        {ssmt.magneto ? `Magneto at ${formatPrice(ssmt.magneto_level)}` : ssmt.quality ? `${ssmt.quality} quality` : "No divergence"}
+      </StatusPill>
     </Panel>
   );
 }
