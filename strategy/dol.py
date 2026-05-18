@@ -110,8 +110,8 @@ def _score_pool(
     else:
         score += 5
     if prefer_actionable_targets and pool.source == "current_day":
-        score += 20
-        reasoning.append("Current-day liquidity is actionable for today's DOL")
+        score -= 10
+        reasoning.append("Current-day extreme is session context, not fresh liquidity by itself")
     if active_range.current_position == "premium" and pool.direction == "sellside":
         score += 20
         reasoning.append("HTF price is trading in premium")
@@ -183,7 +183,7 @@ def _select_with_tiebreakers(
         close,
         key=lambda c: (
             c.score,
-            1 if prefer_current_day and c.label in {"current_day_high", "current_day_low"} else 0,
+            0 if prefer_current_day and c.label in {"current_day_high", "current_day_low"} else 1,
             1 if prefer_range_boundary and c.label in {"active_range_high", "active_range_low"} else 0,
             1 if c.liquidity_type == "ERL" else 0,
             1 if c.timeframe == "H4" else 0,
