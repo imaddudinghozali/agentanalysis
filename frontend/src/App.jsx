@@ -155,6 +155,7 @@ function HtfContext({ analysis }) {
   const hrlrLrlr = htf.hrlr_lrlr ?? {};
   const targetLrlr = hrlrLrlr.target_lrlr ?? {};
   const mmxm = htf.mmxm_swing_grade ?? {};
+  const judas = htf.judas_swing ?? {};
   const rangeSize = htf.dealing_range_high - htf.dealing_range_low;
   const rangePosition =
     typeof htf.current_price === "number" && rangeSize > 0
@@ -189,6 +190,11 @@ function HtfContext({ analysis }) {
           label="MMXM"
           value={formatLabel(mmxm.model)}
           sub={`${formatLabel(mmxm.phase)} Q${mmxm.quadrant ?? "NA"}`}
+        />
+        <Metric
+          label="Judas"
+          value={formatLabel(judas.status)}
+          sub={`${formatLabel(judas.manipulation_direction)} > ${formatLabel(judas.target_direction)} ${formatPrice(judas.target_price)}`}
         />
       </div>
       <div className="range-track" aria-label="Dealing range">

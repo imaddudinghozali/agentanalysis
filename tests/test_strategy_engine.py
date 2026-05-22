@@ -7,6 +7,7 @@ from strategy.common import Candle
 from strategy.direction_liquidity import build_direction_liquidity_hierarchy
 from strategy.displacement import DisplacementSignal
 from strategy.dol import score_dol_candidates
+from strategy.judas import build_judas_swing_context
 from strategy.liquidity import LiquidityPool, SweepEvent
 from strategy.mmxm import build_mmxm_swing_grade
 from strategy.ohlc import build_htf_candle_phase
@@ -228,6 +229,31 @@ def test_mmxm_swing_grading_maps_sell_model_quadrant_and_terminus():
     assert grade.terminus_price == 80
 
 
+def test_classic_judas_detects_new_york_sellside_sweep_into_buyside_target():
+    start = datetime(2026, 5, 18, 12, tzinfo=timezone.utc)  # 08:00 New York during DST.
+    rows = normalize_candles(
+        [
+            candle(start, 100, 101, 99, 100),
+            candle(start + timedelta(minutes=15), 100, 102, 99.5, 101),
+            candle(start + timedelta(minutes=30), 101, 102.5, 100, 102),
+            candle(start + timedelta(minutes=45), 102, 103, 100.5, 102),
+            candle(start + timedelta(minutes=60), 102, 102.2, 98, 100),
+            candle(start + timedelta(minutes=75), 100, 103.5, 99.5, 103),
+        ]
+    )
+
+    context = build_judas_swing_context(rows, rows[-1].time, "buyside", StrategyConfig())
+
+    assert context.status == "judas_confirmed"
+    assert context.detected is True
+    assert context.session == "New York"
+    assert context.manipulation_direction == "sellside"
+    assert context.target_direction == "buyside"
+    assert context.target_price == 103
+    assert context.alignment == "aligned"
+    assert context.confidence == "high"
+
+
 def test_ssmt_detects_bearish_divergence_when_primary_sweeps_high_and_secondary_fails():
     start = datetime(2026, 5, 1, 5, tzinfo=timezone.utc)
     primary = normalize_candles(
@@ -327,6 +353,7 @@ def test_pipeline_all_bearish_confirmations_allows_sell():
     assert result["htf_context"]["direction_liquidity"]["active_level"]["parent_timeframe"] == "D1"
     assert result["htf_context"]["mmxm_swing_grade"]["model"] == "MMSM"
     assert result["htf_context"]["mmxm_swing_grade"]["direction"] == "sellside"
+    assert "judas_swing" in result["htf_context"]
     assert result["htf_context"]["narrative_direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["confidence"] == "high"

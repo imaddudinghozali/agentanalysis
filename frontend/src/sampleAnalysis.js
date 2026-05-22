@@ -58,6 +58,19 @@ export const sampleAnalysis = {
       terminus_side: "sellside",
       range_timeframe: "H4",
     },
+    judas_swing: {
+      status: "judas_confirmed",
+      detected: true,
+      session: "New York",
+      manipulation_direction: "buyside",
+      target_direction: "sellside",
+      opening_range_high: 2432.1,
+      opening_range_low: 2390,
+      judas_price: 2435.2,
+      target_price: 2390,
+      alignment: "aligned",
+      confidence: "high",
+    },
   },
   liquidity: {
     recently_taken: [

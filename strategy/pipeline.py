@@ -8,6 +8,7 @@ from .displacement import detect_displacement
 from .dol import score_dol_candidates
 from .fvg import detect_fvg
 from .htf import build_htf_narrative
+from .judas import build_judas_swing_context
 from .liquidity import build_liquidity_pools, detect_sweeps, latest_sweep
 from .mmxm import build_mmxm_swing_grade
 from .narrative import build_narrative
@@ -81,6 +82,7 @@ def analyze_market(
     draw_direction = htf_narrative.direction or getattr(direction_liquidity, "dominant_direction", None)
     mmxm_grade = build_mmxm_swing_grade(active_range, draw_direction)
     hrlr_lrlr = build_hrlr_lrlr_context(m15, m15_swings, sweeps, active_range, cfg)
+    judas_swing = build_judas_swing_context(m15, as_of, draw_direction, cfg)
     prefer_actionable_targets = mode.lower() in {"live", "tradingview"}
     pools = build_liquidity_pools(
         active_range,
@@ -102,6 +104,7 @@ def analyze_market(
         direction_hierarchy=direction_liquidity,
         hrlr_lrlr=hrlr_lrlr,
         mmxm_grade=mmxm_grade,
+        judas_swing=judas_swing,
         include_execution_factors=True,
         prefer_actionable_targets=prefer_actionable_targets,
     )
@@ -148,6 +151,7 @@ def analyze_market(
                 direction_liquidity,
                 hrlr_lrlr,
                 mmxm_grade,
+                judas_swing,
             ),
             "liquidity": {
                 "recently_taken": sweeps,
@@ -242,6 +246,7 @@ def _htf_context(
     direction_liquidity: Any = None,
     hrlr_lrlr: Any = None,
     mmxm_grade: Any = None,
+    judas_swing: Any = None,
 ) -> dict[str, Any]:
     bias_source = _bias_source(htf_narrative)
     if active_range is None:
@@ -261,6 +266,7 @@ def _htf_context(
             "direction_liquidity": direction_liquidity,
             "hrlr_lrlr": hrlr_lrlr,
             "mmxm_swing_grade": mmxm_grade,
+            "judas_swing": judas_swing,
         }
     return {
         "dealing_range_high": active_range.high,
@@ -279,6 +285,7 @@ def _htf_context(
         "direction_liquidity": direction_liquidity,
         "hrlr_lrlr": hrlr_lrlr,
         "mmxm_swing_grade": mmxm_grade,
+        "judas_swing": judas_swing,
     }
 
 

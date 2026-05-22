@@ -45,6 +45,7 @@ def score_dol_candidates(
     direction_hierarchy: object | None = None,
     hrlr_lrlr: object | None = None,
     mmxm_grade: object | None = None,
+    judas_swing: object | None = None,
     include_execution_factors: bool = False,
     prefer_actionable_targets: bool = False,
 ) -> DOLSelection:
@@ -69,6 +70,7 @@ def score_dol_candidates(
             direction_hierarchy,
             hrlr_lrlr,
             mmxm_grade,
+            judas_swing,
             include_execution_factors,
             prefer_actionable_targets,
         )
@@ -105,6 +107,7 @@ def _score_pool(
     direction_hierarchy: object | None,
     hrlr_lrlr: object | None,
     mmxm_grade: object | None,
+    judas_swing: object | None,
     include_execution_factors: bool,
     prefer_actionable_targets: bool,
 ) -> DOLCandidate:
@@ -171,6 +174,17 @@ def _score_pool(
     elif getattr(mmxm_grade, "status", None) == "complete" and mmxm_direction in {"buyside", "sellside"}:
         score -= 5
         reasoning.append("MMXM swing grading favors the opposite side")
+    judas_target_direction = getattr(judas_swing, "target_direction", None)
+    if getattr(judas_swing, "detected", False) and judas_target_direction == pool.direction:
+        score += 15
+        reasoning.append("Classic Judas Swing supports this draw")
+        target_price = getattr(judas_swing, "target_price", None)
+        if target_price is not None and abs(pool.price - target_price) <= max(atr * 2.0, 0.1):
+            score += 5
+            reasoning.append("DOL is near the Judas opening-range target")
+    elif getattr(judas_swing, "detected", False) and judas_target_direction in {"buyside", "sellside"}:
+        score -= 5
+        reasoning.append("Classic Judas Swing favors the opposite side")
     execution_applicable = include_execution_factors and htf_direction in (None, "neutral", pool.direction)
     if execution_applicable:
         opposite = "buyside" if pool.direction == "sellside" else "sellside"
