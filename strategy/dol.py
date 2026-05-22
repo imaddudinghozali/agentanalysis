@@ -43,6 +43,7 @@ def score_dol_candidates(
     config: StrategyConfig,
     htf_direction: str | None = None,
     direction_hierarchy: object | None = None,
+    hrlr_lrlr: object | None = None,
     include_execution_factors: bool = False,
     prefer_actionable_targets: bool = False,
 ) -> DOLSelection:
@@ -65,6 +66,7 @@ def score_dol_candidates(
             time_context,
             htf_direction,
             direction_hierarchy,
+            hrlr_lrlr,
             include_execution_factors,
             prefer_actionable_targets,
         )
@@ -99,6 +101,7 @@ def _score_pool(
     time_context: object,
     htf_direction: str | None,
     direction_hierarchy: object | None,
+    hrlr_lrlr: object | None,
     include_execution_factors: bool,
     prefer_actionable_targets: bool,
 ) -> DOLCandidate:
@@ -143,6 +146,17 @@ def _score_pool(
     elif hierarchy_direction in {"buyside", "sellside"}:
         score -= 10
         reasoning.append("Direction liquidity hierarchy favors the opposite side")
+    hrlr_target_direction = getattr(hrlr_lrlr, "target_direction", None)
+    target_lrlr = getattr(hrlr_lrlr, "target_lrlr", None)
+    if getattr(hrlr_lrlr, "hrlr_taken", False) and hrlr_target_direction == pool.direction:
+        score += 15
+        reasoning.append("HRLR was taken; LRLR target supports this draw")
+        if target_lrlr is not None and abs(pool.price - target_lrlr.price) <= max(atr * 2.0, 0.1):
+            score += 5
+            reasoning.append("DOL is near the active LRLR stack")
+    elif getattr(hrlr_lrlr, "hrlr_taken", False) and hrlr_target_direction in {"buyside", "sellside"}:
+        score -= 10
+        reasoning.append("HRLR/LRLR sequence favors the opposite side")
     execution_applicable = include_execution_factors and htf_direction in (None, "neutral", pool.direction)
     if execution_applicable:
         opposite = "buyside" if pool.direction == "sellside" else "sellside"

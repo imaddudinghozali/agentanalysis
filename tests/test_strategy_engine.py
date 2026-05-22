@@ -7,12 +7,13 @@ from strategy.common import Candle
 from strategy.direction_liquidity import build_direction_liquidity_hierarchy
 from strategy.displacement import DisplacementSignal
 from strategy.dol import score_dol_candidates
-from strategy.liquidity import LiquidityPool
+from strategy.liquidity import LiquidityPool, SweepEvent
 from strategy.ohlc import build_htf_candle_phase
 from strategy.range import DealingRange
+from strategy.resistance_liquidity import build_hrlr_lrlr_context
 from strategy.ssmt import detect_ssmt
 from strategy.structure import StructureSignal
-from strategy.swing import detect_swings
+from strategy.swing import SwingPoint, detect_swings
 
 
 def candle(time, open_, high, low, close):
@@ -165,6 +166,40 @@ def test_direction_liquidity_hierarchy_prioritizes_daily_to_h1_to_m15_layer():
     assert hierarchy.active_level.irl_erl_timeframe == "H1"
     assert hierarchy.active_level.direction_timeframes == ["M15", "M5"]
     assert hierarchy.dominant_direction in {"buyside", "sellside", "neutral"}
+
+
+def test_hrlr_taken_targets_opposite_lrlr_stack():
+    start = datetime(2026, 5, 18, tzinfo=timezone.utc)
+    candles = normalize_candles(
+        [candle(start + timedelta(minutes=15 * i), 100, 101, 99, 100) for i in range(20)]
+    )
+    swings = [
+        SwingPoint(3, candles[3].time, 110.0, "high", "M15"),
+        SwingPoint(7, candles[7].time, 110.4, "high", "M15"),
+        SwingPoint(5, candles[5].time, 95.0, "low", "M15"),
+        SwingPoint(10, candles[10].time, 95.3, "low", "M15"),
+    ]
+    sweeps = [
+        SweepEvent(
+            "internal_buyside_liquidity",
+            "M15",
+            "buyside",
+            110.4,
+            candles[-2].time,
+            len(candles) - 2,
+            candles[7].time,
+        )
+    ]
+
+    context = build_hrlr_lrlr_context(candles, swings, sweeps, None, StrategyConfig())
+
+    assert context.status == "hrlr_to_lrlr"
+    assert context.hrlr_taken is True
+    assert context.hrlr_direction == "buyside"
+    assert context.target_direction == "sellside"
+    assert context.target_lrlr is not None
+    assert context.target_lrlr.direction == "sellside"
+    assert context.target_lrlr.swing_count == 2
 
 
 def test_ssmt_detects_bearish_divergence_when_primary_sweeps_high_and_secondary_fails():

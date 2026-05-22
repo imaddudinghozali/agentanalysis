@@ -12,6 +12,7 @@ from .liquidity import build_liquidity_pools, detect_sweeps, latest_sweep
 from .narrative import build_narrative
 from .ohlc import build_htf_candle_phase
 from .range import build_active_dealing_range
+from .resistance_liquidity import build_hrlr_lrlr_context
 from .ssmt import detect_ssmt
 from .structure import detect_mss
 from .swing import detect_swings
@@ -67,6 +68,7 @@ def analyze_market(
     ssmt = detect_ssmt(m15, secondary_m15, as_of, cfg)
     time_context = get_time_context(as_of)
     htf_candle_phase = build_htf_candle_phase(m15, as_of, "D1")
+    hrlr_lrlr = build_hrlr_lrlr_context(m15, m15_swings, sweeps, active_range, cfg)
     direction_liquidity = build_direction_liquidity_hierarchy(
         m15=m15,
         h1=h1,
@@ -95,6 +97,7 @@ def analyze_market(
         cfg,
         htf_direction=htf_narrative.direction,
         direction_hierarchy=direction_liquidity,
+        hrlr_lrlr=hrlr_lrlr,
         include_execution_factors=True,
         prefer_actionable_targets=prefer_actionable_targets,
     )
@@ -139,6 +142,7 @@ def analyze_market(
                 execution_price,
                 htf_candle_phase,
                 direction_liquidity,
+                hrlr_lrlr,
             ),
             "liquidity": {
                 "recently_taken": sweeps,
@@ -231,6 +235,7 @@ def _htf_context(
     current_price: float | None,
     htf_candle_phase: Any = None,
     direction_liquidity: Any = None,
+    hrlr_lrlr: Any = None,
 ) -> dict[str, Any]:
     bias_source = _bias_source(htf_narrative)
     if active_range is None:
@@ -248,6 +253,7 @@ def _htf_context(
             "frames": htf_narrative.frames,
             "candle_phase": htf_candle_phase,
             "direction_liquidity": direction_liquidity,
+            "hrlr_lrlr": hrlr_lrlr,
         }
     return {
         "dealing_range_high": active_range.high,
@@ -264,6 +270,7 @@ def _htf_context(
         "timeframe": active_range.timeframe,
         "candle_phase": htf_candle_phase,
         "direction_liquidity": direction_liquidity,
+        "hrlr_lrlr": hrlr_lrlr,
     }
 
 

@@ -35,6 +35,18 @@ export const sampleAnalysis = {
     current_price: 2400.8,
     current_position: "premium",
     dol_direction: "sellside",
+    hrlr_lrlr: {
+      status: "hrlr_to_lrlr",
+      hrlr_taken: true,
+      hrlr_direction: "buyside",
+      hrlr_price: 2432.1,
+      target_direction: "sellside",
+      target_lrlr: {
+        direction: "sellside",
+        price: 2390,
+        swing_count: 2,
+      },
+    },
   },
   liquidity: {
     recently_taken: [

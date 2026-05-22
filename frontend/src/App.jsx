@@ -152,6 +152,8 @@ function HtfContext({ analysis }) {
   const phase = htf.candle_phase ?? {};
   const directionLiquidity = htf.direction_liquidity ?? {};
   const activeDirectionLevel = directionLiquidity.active_level ?? {};
+  const hrlrLrlr = htf.hrlr_lrlr ?? {};
+  const targetLrlr = hrlrLrlr.target_lrlr ?? {};
   const rangeSize = htf.dealing_range_high - htf.dealing_range_low;
   const rangePosition =
     typeof htf.current_price === "number" && rangeSize > 0
@@ -176,6 +178,11 @@ function HtfContext({ analysis }) {
           sub={`${activeDirectionLevel.parent_timeframe ?? "NA"} > ${activeDirectionLevel.irl_erl_timeframe ?? "NA"} > ${(
             activeDirectionLevel.direction_timeframes ?? []
           ).join("/") || "NA"}`}
+        />
+        <Metric
+          label="HRLR / LRLR"
+          value={formatLabel(hrlrLrlr.status)}
+          sub={`${formatLabel(hrlrLrlr.hrlr_direction)} > ${formatLabel(hrlrLrlr.target_direction)} ${formatPrice(targetLrlr.price)}`}
         />
       </div>
       <div className="range-track" aria-label="Dealing range">
