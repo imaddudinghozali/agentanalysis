@@ -47,6 +47,17 @@ export const sampleAnalysis = {
         swing_count: 2,
       },
     },
+    mmxm_swing_grade: {
+      status: "complete",
+      model: "MMSM",
+      direction: "sellside",
+      phase: "premium_distribution",
+      quadrant: 0.75,
+      fib_position: 0.73,
+      terminus_price: 2388.1,
+      terminus_side: "sellside",
+      range_timeframe: "H4",
+    },
   },
   liquidity: {
     recently_taken: [

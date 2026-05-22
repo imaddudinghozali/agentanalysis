@@ -8,6 +8,7 @@ from strategy.direction_liquidity import build_direction_liquidity_hierarchy
 from strategy.displacement import DisplacementSignal
 from strategy.dol import score_dol_candidates
 from strategy.liquidity import LiquidityPool, SweepEvent
+from strategy.mmxm import build_mmxm_swing_grade
 from strategy.ohlc import build_htf_candle_phase
 from strategy.range import DealingRange
 from strategy.resistance_liquidity import build_hrlr_lrlr_context
@@ -202,6 +203,31 @@ def test_hrlr_taken_targets_opposite_lrlr_stack():
     assert context.target_lrlr.swing_count == 2
 
 
+def test_mmxm_swing_grading_maps_sell_model_quadrant_and_terminus():
+    start = datetime(2026, 5, 18, tzinfo=timezone.utc)
+    active_range = DealingRange(
+        timeframe="H4",
+        high=120,
+        low=80,
+        high_time=start,
+        low_time=start,
+        equilibrium=100,
+        current_position="premium",
+        current_price=112,
+        direction_hint="sellside",
+    )
+
+    grade = build_mmxm_swing_grade(active_range, "sellside")
+
+    assert grade.status == "complete"
+    assert grade.model == "MMSM"
+    assert grade.direction == "sellside"
+    assert grade.quadrant == 0.75
+    assert grade.phase == "premium_distribution"
+    assert grade.terminus_side == "sellside"
+    assert grade.terminus_price == 80
+
+
 def test_ssmt_detects_bearish_divergence_when_primary_sweeps_high_and_secondary_fails():
     start = datetime(2026, 5, 1, 5, tzinfo=timezone.utc)
     primary = normalize_candles(
@@ -299,9 +325,12 @@ def test_pipeline_all_bearish_confirmations_allows_sell():
     assert result["htf_context"]["candle_phase"]["pattern"] in {"OHLC", "OLHC", "UNRESOLVED"}
     assert result["htf_context"]["candle_phase"]["current_leg"]
     assert result["htf_context"]["direction_liquidity"]["active_level"]["parent_timeframe"] == "D1"
+    assert result["htf_context"]["mmxm_swing_grade"]["model"] == "MMSM"
+    assert result["htf_context"]["mmxm_swing_grade"]["direction"] == "sellside"
     assert result["htf_context"]["narrative_direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["confidence"] == "high"
+    assert any("MMXM" in reason for reason in result["liquidity"]["next_dol"]["reasoning"])
     assert any("Direction liquidity hierarchy supports this draw" in reason for reason in result["liquidity"]["next_dol"]["reasoning"])
     assert any("opposite-side buyside sweep" in reason for reason in result["liquidity"]["next_dol"]["reasoning"])
     assert any("MSS confirms direction" in reason for reason in result["liquidity"]["next_dol"]["reasoning"])

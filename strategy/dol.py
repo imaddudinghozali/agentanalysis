@@ -44,6 +44,7 @@ def score_dol_candidates(
     htf_direction: str | None = None,
     direction_hierarchy: object | None = None,
     hrlr_lrlr: object | None = None,
+    mmxm_grade: object | None = None,
     include_execution_factors: bool = False,
     prefer_actionable_targets: bool = False,
 ) -> DOLSelection:
@@ -67,6 +68,7 @@ def score_dol_candidates(
             htf_direction,
             direction_hierarchy,
             hrlr_lrlr,
+            mmxm_grade,
             include_execution_factors,
             prefer_actionable_targets,
         )
@@ -102,6 +104,7 @@ def _score_pool(
     htf_direction: str | None,
     direction_hierarchy: object | None,
     hrlr_lrlr: object | None,
+    mmxm_grade: object | None,
     include_execution_factors: bool,
     prefer_actionable_targets: bool,
 ) -> DOLCandidate:
@@ -157,6 +160,17 @@ def _score_pool(
     elif getattr(hrlr_lrlr, "hrlr_taken", False) and hrlr_target_direction in {"buyside", "sellside"}:
         score -= 10
         reasoning.append("HRLR/LRLR sequence favors the opposite side")
+    mmxm_direction = getattr(mmxm_grade, "direction", None)
+    if getattr(mmxm_grade, "status", None) == "complete" and mmxm_direction == pool.direction:
+        score += 10
+        reasoning.append(f"{getattr(mmxm_grade, 'model', 'MMXM')} swing grading supports this draw")
+        terminus_price = getattr(mmxm_grade, "terminus_price", None)
+        if terminus_price is not None and abs(pool.price - terminus_price) <= max(atr * 2.0, 0.1):
+            score += 5
+            reasoning.append("DOL is near the MMXM terminus")
+    elif getattr(mmxm_grade, "status", None) == "complete" and mmxm_direction in {"buyside", "sellside"}:
+        score -= 5
+        reasoning.append("MMXM swing grading favors the opposite side")
     execution_applicable = include_execution_factors and htf_direction in (None, "neutral", pool.direction)
     if execution_applicable:
         opposite = "buyside" if pool.direction == "sellside" else "sellside"

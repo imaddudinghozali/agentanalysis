@@ -9,6 +9,7 @@ from .dol import score_dol_candidates
 from .fvg import detect_fvg
 from .htf import build_htf_narrative
 from .liquidity import build_liquidity_pools, detect_sweeps, latest_sweep
+from .mmxm import build_mmxm_swing_grade
 from .narrative import build_narrative
 from .ohlc import build_htf_candle_phase
 from .range import build_active_dealing_range
@@ -68,7 +69,6 @@ def analyze_market(
     ssmt = detect_ssmt(m15, secondary_m15, as_of, cfg)
     time_context = get_time_context(as_of)
     htf_candle_phase = build_htf_candle_phase(m15, as_of, "D1")
-    hrlr_lrlr = build_hrlr_lrlr_context(m15, m15_swings, sweeps, active_range, cfg)
     direction_liquidity = build_direction_liquidity_hierarchy(
         m15=m15,
         h1=h1,
@@ -78,6 +78,9 @@ def analyze_market(
         current_price=execution_price,
         config=cfg,
     )
+    draw_direction = htf_narrative.direction or getattr(direction_liquidity, "dominant_direction", None)
+    mmxm_grade = build_mmxm_swing_grade(active_range, draw_direction)
+    hrlr_lrlr = build_hrlr_lrlr_context(m15, m15_swings, sweeps, active_range, cfg)
     prefer_actionable_targets = mode.lower() in {"live", "tradingview"}
     pools = build_liquidity_pools(
         active_range,
@@ -98,6 +101,7 @@ def analyze_market(
         htf_direction=htf_narrative.direction,
         direction_hierarchy=direction_liquidity,
         hrlr_lrlr=hrlr_lrlr,
+        mmxm_grade=mmxm_grade,
         include_execution_factors=True,
         prefer_actionable_targets=prefer_actionable_targets,
     )
@@ -143,6 +147,7 @@ def analyze_market(
                 htf_candle_phase,
                 direction_liquidity,
                 hrlr_lrlr,
+                mmxm_grade,
             ),
             "liquidity": {
                 "recently_taken": sweeps,
@@ -236,6 +241,7 @@ def _htf_context(
     htf_candle_phase: Any = None,
     direction_liquidity: Any = None,
     hrlr_lrlr: Any = None,
+    mmxm_grade: Any = None,
 ) -> dict[str, Any]:
     bias_source = _bias_source(htf_narrative)
     if active_range is None:
@@ -254,6 +260,7 @@ def _htf_context(
             "candle_phase": htf_candle_phase,
             "direction_liquidity": direction_liquidity,
             "hrlr_lrlr": hrlr_lrlr,
+            "mmxm_swing_grade": mmxm_grade,
         }
     return {
         "dealing_range_high": active_range.high,
@@ -271,6 +278,7 @@ def _htf_context(
         "candle_phase": htf_candle_phase,
         "direction_liquidity": direction_liquidity,
         "hrlr_lrlr": hrlr_lrlr,
+        "mmxm_swing_grade": mmxm_grade,
     }
 
 
