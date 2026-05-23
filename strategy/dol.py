@@ -46,6 +46,7 @@ def score_dol_candidates(
     hrlr_lrlr: object | None = None,
     mmxm_grade: object | None = None,
     judas_swing: object | None = None,
+    nine_am_model: object | None = None,
     include_execution_factors: bool = False,
     prefer_actionable_targets: bool = False,
 ) -> DOLSelection:
@@ -71,6 +72,7 @@ def score_dol_candidates(
             hrlr_lrlr,
             mmxm_grade,
             judas_swing,
+            nine_am_model,
             include_execution_factors,
             prefer_actionable_targets,
         )
@@ -108,6 +110,7 @@ def _score_pool(
     hrlr_lrlr: object | None,
     mmxm_grade: object | None,
     judas_swing: object | None,
+    nine_am_model: object | None,
     include_execution_factors: bool,
     prefer_actionable_targets: bool,
 ) -> DOLCandidate:
@@ -185,6 +188,17 @@ def _score_pool(
     elif getattr(judas_swing, "detected", False) and judas_target_direction in {"buyside", "sellside"}:
         score -= 5
         reasoning.append("Classic Judas Swing favors the opposite side")
+    nine_am_direction = getattr(nine_am_model, "direction", None)
+    if getattr(nine_am_model, "status", None) == "confirmed" and nine_am_direction == pool.direction:
+        score += 10
+        reasoning.append("09AM model supports this draw")
+        target_price = getattr(nine_am_model, "target_price", None)
+        if target_price is not None and abs(pool.price - target_price) <= max(atr * 2.0, 0.1):
+            score += 5
+            reasoning.append("DOL is near the 09AM model target")
+    elif getattr(nine_am_model, "status", None) == "confirmed" and nine_am_direction in {"buyside", "sellside"}:
+        score -= 5
+        reasoning.append("09AM model favors the opposite side")
     execution_applicable = include_execution_factors and htf_direction in (None, "neutral", pool.direction)
     if execution_applicable:
         opposite = "buyside" if pool.direction == "sellside" else "sellside"

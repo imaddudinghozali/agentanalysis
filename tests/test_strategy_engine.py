@@ -10,6 +10,7 @@ from strategy.dol import score_dol_candidates
 from strategy.judas import build_judas_swing_context
 from strategy.liquidity import LiquidityPool, SweepEvent
 from strategy.mmxm import build_mmxm_swing_grade
+from strategy.nine_am import build_nine_am_model_context
 from strategy.ohlc import build_htf_candle_phase
 from strategy.range import DealingRange
 from strategy.resistance_liquidity import build_hrlr_lrlr_context
@@ -254,6 +255,34 @@ def test_classic_judas_detects_new_york_sellside_sweep_into_buyside_target():
     assert context.confidence == "high"
 
 
+def test_09am_model_detects_expansion_after_05am_reversal():
+    start = datetime(2026, 5, 18, 5, tzinfo=timezone.utc)  # 01:00 New York during DST.
+    rows = normalize_candles(
+        [
+            candle(start, 100, 101, 99, 100),
+            candle(start + timedelta(hours=1), 100, 101.5, 99.2, 100.5),
+            candle(start + timedelta(hours=2), 100.5, 102, 99.5, 101),
+            candle(start + timedelta(hours=3), 101, 102, 100, 101),
+            candle(start + timedelta(hours=4), 101, 101.5, 98, 100),
+            candle(start + timedelta(hours=5), 100, 102.5, 99.5, 101),
+            candle(start + timedelta(hours=6), 101, 102.8, 100.5, 102),
+            candle(start + timedelta(hours=7), 102, 102.2, 101, 101.5),
+            candle(start + timedelta(hours=8), 101.5, 103.5, 101.2, 103.2),
+            candle(start + timedelta(hours=8, minutes=15), 103.2, 104.0, 102.8, 103.8),
+        ]
+    )
+
+    context = build_nine_am_model_context(rows, rows[-1].time, "buyside", StrategyConfig(), target_price=110)
+
+    assert context.status == "confirmed"
+    assert context.profile == "expansion_profile"
+    assert context.direction == "buyside"
+    assert context.four_hour_open == 101.5
+    assert context.previous_block_high == 102.8
+    assert context.previous_block_low == 98
+    assert context.confidence == "high"
+
+
 def test_ssmt_detects_bearish_divergence_when_primary_sweeps_high_and_secondary_fails():
     start = datetime(2026, 5, 1, 5, tzinfo=timezone.utc)
     primary = normalize_candles(
@@ -354,6 +383,7 @@ def test_pipeline_all_bearish_confirmations_allows_sell():
     assert result["htf_context"]["mmxm_swing_grade"]["model"] == "MMSM"
     assert result["htf_context"]["mmxm_swing_grade"]["direction"] == "sellside"
     assert "judas_swing" in result["htf_context"]
+    assert "nine_am_model" in result["htf_context"]
     assert result["htf_context"]["narrative_direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["direction"] == "sellside"
     assert result["liquidity"]["next_dol"]["confidence"] == "high"

@@ -71,6 +71,18 @@ export const sampleAnalysis = {
       alignment: "aligned",
       confidence: "high",
     },
+    nine_am_model: {
+      status: "confirmed",
+      active: true,
+      profile: "expansion_profile",
+      direction: "sellside",
+      four_hour_open: 2415.3,
+      previous_block_high: 2432.1,
+      previous_block_low: 2397.4,
+      target_price: 2388.1,
+      alignment: "aligned",
+      confidence: "high",
+    },
   },
   liquidity: {
     recently_taken: [

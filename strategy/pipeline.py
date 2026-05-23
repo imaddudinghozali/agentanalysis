@@ -12,6 +12,7 @@ from .judas import build_judas_swing_context
 from .liquidity import build_liquidity_pools, detect_sweeps, latest_sweep
 from .mmxm import build_mmxm_swing_grade
 from .narrative import build_narrative
+from .nine_am import build_nine_am_model_context
 from .ohlc import build_htf_candle_phase
 from .range import build_active_dealing_range
 from .resistance_liquidity import build_hrlr_lrlr_context
@@ -83,6 +84,13 @@ def analyze_market(
     mmxm_grade = build_mmxm_swing_grade(active_range, draw_direction)
     hrlr_lrlr = build_hrlr_lrlr_context(m15, m15_swings, sweeps, active_range, cfg)
     judas_swing = build_judas_swing_context(m15, as_of, draw_direction, cfg)
+    nine_am_model = build_nine_am_model_context(
+        m15,
+        as_of,
+        draw_direction,
+        cfg,
+        target_price=getattr(mmxm_grade, "terminus_price", None),
+    )
     prefer_actionable_targets = mode.lower() in {"live", "tradingview"}
     pools = build_liquidity_pools(
         active_range,
@@ -105,6 +113,7 @@ def analyze_market(
         hrlr_lrlr=hrlr_lrlr,
         mmxm_grade=mmxm_grade,
         judas_swing=judas_swing,
+        nine_am_model=nine_am_model,
         include_execution_factors=True,
         prefer_actionable_targets=prefer_actionable_targets,
     )
@@ -152,6 +161,7 @@ def analyze_market(
                 hrlr_lrlr,
                 mmxm_grade,
                 judas_swing,
+                nine_am_model,
             ),
             "liquidity": {
                 "recently_taken": sweeps,
@@ -247,6 +257,7 @@ def _htf_context(
     hrlr_lrlr: Any = None,
     mmxm_grade: Any = None,
     judas_swing: Any = None,
+    nine_am_model: Any = None,
 ) -> dict[str, Any]:
     bias_source = _bias_source(htf_narrative)
     if active_range is None:
@@ -267,6 +278,7 @@ def _htf_context(
             "hrlr_lrlr": hrlr_lrlr,
             "mmxm_swing_grade": mmxm_grade,
             "judas_swing": judas_swing,
+            "nine_am_model": nine_am_model,
         }
     return {
         "dealing_range_high": active_range.high,
@@ -286,6 +298,7 @@ def _htf_context(
         "hrlr_lrlr": hrlr_lrlr,
         "mmxm_swing_grade": mmxm_grade,
         "judas_swing": judas_swing,
+        "nine_am_model": nine_am_model,
     }
 
 
